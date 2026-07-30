@@ -3,7 +3,7 @@ icon: fas fa-info-circle
 order: 4
 ---
 
-大家好，我是霍世杰，一个从业了 9 年的互联网老兵，过去是 `CV 工程师`，如今是 `AI Agent 指挥家`。我的经历有兴趣的戳👉[这里](../posts/我的经历)，有幸参与过一些有意思的产品：[Worktile](https://worktile.com/)、[PingCode](https://pingcode.com/)、[NocoBase](https://www.nocobase.com/)。 
+大家好，我是霍世杰，一个从业了 9 年的互联网老兵，过去是 `CV 工程师`，如今是 `AI Agent 指挥家`，核心是做后端，后来延伸前端，专注设计和优化架构，近两年又兼半吊子产品和运维，名曰“全栈”，详细的戳👉[这里](../posts/career/)，有幸参与过一些有意思的产品：[Worktile](https://worktile.com/)、[PingCode](https://pingcode.com/)、[NocoBase](https://www.nocobase.com/)。
 
 ## 我的价值观
 **人与人之间能否连接的长久，取决于三观**。
