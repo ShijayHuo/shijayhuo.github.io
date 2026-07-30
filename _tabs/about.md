@@ -1,8 +1,28 @@
 ---
-# the default layout is 'page'
 icon: fas fa-info-circle
 order: 4
 ---
 
-> Add Markdown syntax content to file `_tabs/about.md`{: .filepath } and it will show up on this page.
-{: .prompt-tip }
+大家好，我是霍世杰，一个从业了 9 年的互联网老兵，过去是 `CV 工程师`，如今是 `AI Agent 指挥家`。我的经历有兴趣的戳👉[这里](../posts/我的经历)，有幸参与过一些有意思的产品：[Worktile](https://worktile.com/)、[PingCode](https://pingcode.com/)、[NocoBase](https://www.nocobase.com/)。 
+
+## 我的价值观
+**人与人之间能否连接的长久，取决于三观**。
+
+起码，得认同[社会主义核心价值观](https://www.12371.cn/2023/11/28/STUD1701138144998983.shtml)吧，诶，不要觉得理所应当，现实真的有很多三观扭曲的。
+
+其次，我思考和行事的底层逻辑是**哲学思维**和**科学精神**主导的，比如：
+- 遇到问题先辩证看，先保持怀疑态度，弄清前提和原因，透过现象看到本质
+- 做事求真务实，实事求是
+- 做事原则多，起码在工作中我必须尊重自己的职业并恪守操守
+
+这几条看起来轻描淡写，很正常，但实际会遇到很多不理解的人，不知道这个底层逻辑，就会产生误解，比如，你跟他理性看问题讲道理，讲事实，他说你较真儿，放大问题，上纲上线，杠精等......对此我也表示很无语。
+
+我的讨厌清单：
+- 虚伪的人和事
+- 不考虑前提和验证，就片面给人和事定性
+
+## 我的兴趣
+书法，自娱自乐
+<p style="float: left">
+  <img src="/assets/img/shufa" width="300" height="200" />
+</p>
