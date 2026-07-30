@@ -24,5 +24,5 @@ order: 4
 ## 我的兴趣
 书法，自娱自乐
 <p style="float: left">
-  <img src="/assets/img/shufa" alt="书法作品" width="300" height="200" />
+  <img src="/assets/img/shufa.png" alt="书法作品" width="300" height="200" />
 </p>
