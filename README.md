@@ -25,6 +25,18 @@ This starter bundles those files from the latest **Chirpy** release along with a
 
 Check out the [theme's docs](https://github.com/cotes2020/jekyll-theme-chirpy/wiki).
 
+To start the local development server, run:
+
+```shell
+bash ./tools/run.sh
+```
+
+On its first run, the script automatically installs any missing Homebrew,
+rbenv, Ruby, Bundler, and project gem dependencies. Existing installations are
+reused, so subsequent starts only perform a quick dependency check. Setup runs
+without confirmation prompts, although macOS may request the administrator
+password once when Homebrew creates its system directories.
+
 ## Contributing
 
 This repository is automatically updated with new releases from the theme repository. If you encounter any issues or want to contribute to its improvement, please visit the [theme repository][chirpy] to provide feedback.

@@ -2,8 +2,11 @@
 #
 # Run jekyll serve and then launch the site
 
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
 prod=false
-command="bundle exec jekyll s -l"
 host="127.0.0.1"
 
 help() {
@@ -21,6 +24,10 @@ while (($#)); do
   opt="$1"
   case $opt in
   -H | --host)
+    if (($# < 2)); then
+      echo "> Missing value for '$opt'." >&2
+      exit 1
+    fi
     host="$2"
     shift 2
     ;;
@@ -40,15 +47,22 @@ while (($#)); do
   esac
 done
 
-command="$command -H $host"
+# shellcheck source=bootstrap.sh
+source "$SCRIPT_DIR/bootstrap.sh"
+bootstrap_environment
 
-if $prod; then
-  command="JEKYLL_ENV=production $command"
-fi
+command=(bundle exec jekyll s -l -H "$host")
 
 if [ -e /proc/1/cgroup ] && grep -q docker /proc/1/cgroup; then
-  command="$command --force_polling"
+  command+=(--force_polling)
 fi
 
-echo -e "\n> $command\n"
-eval "$command"
+printf '\n> '
+printf '%q ' "${command[@]}"
+printf '\n\n'
+
+if $prod; then
+  JEKYLL_ENV=production "${command[@]}"
+else
+  "${command[@]}"
+fi
