@@ -4,6 +4,9 @@ source "https://rubygems.org"
 
 gem "jekyll-theme-chirpy", "~> 7.6"
 
+# sass-embedded 1.98+ ships a macOS binary that requires macOS 14.
+gem "sass-embedded", "~> 1.97.3"
+
 gem "html-proofer", "~> 5.0", group: :test
 
 platforms :windows, :jruby do
