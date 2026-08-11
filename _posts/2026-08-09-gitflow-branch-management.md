@@ -2,6 +2,9 @@
 layout: post
 title: Git 分支管理
 date: 2026-08-09 14:00 +0800
+image:
+  path: /assets/img/posts/2026-08-09/gitflow-cover-v5.png
+  alt: Git 分支管理封面
 tags: [Git, 项目协作]
 categories: [项目协作]
 ---
