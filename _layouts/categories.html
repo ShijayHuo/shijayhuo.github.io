@@ -1,0 +1,44 @@
+---
+layout: page
+# All post categories, rendered as independent peers.
+---
+
+{% include lang.html %}
+
+{% assign sort_categories = site.categories | sort %}
+
+{% for category in sort_categories %}
+  {% assign category_name = category | first %}
+  {% assign posts_of_category = category | last %}
+
+  <div class="card categories">
+    <div class="card-header d-flex justify-content-between hide-border-bottom">
+      <span class="ms-2">
+        <i class="far fa-folder fa-fw"></i>
+
+        {% capture category_url %}/categories/{{ category_name | slugify | url_encode }}/{% endcapture %}
+        <a href="{{ category_url | relative_url }}" class="mx-2">{{ category_name }}</a>
+
+        <span class="text-muted small font-weight-light">
+          {{ posts_of_category | size }}
+
+          {% if posts_of_category.size > 1 %}
+            {{
+              site.data.locales[lang].categories.post_measure.plural
+              | default: site.data.locales[lang].categories.post_measure
+            }}
+          {% else %}
+            {{
+              site.data.locales[lang].categories.post_measure.singular
+              | default: site.data.locales[lang].categories.post_measure
+            }}
+          {% endif %}
+        </span>
+      </span>
+
+      <span data-bs-toggle="collapse" class="category-trigger hide-border-bottom disabled">
+        <i class="fas fa-fw fa-angle-right"></i>
+      </span>
+    </div>
+  </div>
+{% endfor %}
