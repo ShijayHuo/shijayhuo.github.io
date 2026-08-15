@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "基于位掩码的权限设计"
-date: 2023-07-18 10:01:57 +0800
+date: 2023-07-16 20:56:51 +0800
 categories: ["后端","架构"]
 tags: ["位掩码","权限设计","架构"]
 source_platform: PingCode
