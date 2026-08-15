@@ -227,3 +227,9 @@
 .preview-img img[src*='/assets/img/posts/juejin-7063295421585555492/cover.jpg'] {
   background: #e8f6ff;
 }
+
+/* Keep the cover's central composition intact in variable-height post cards. */
+#post-list .preview-img img[src*='/assets/img/posts/2026-08-15/common-software-engineering-mistakes-cover.png'] {
+  object-fit: contain;
+  background: #fff7e8;
+}

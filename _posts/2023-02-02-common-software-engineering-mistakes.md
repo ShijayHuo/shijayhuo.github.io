@@ -3,6 +3,9 @@ layout: post
 title: "工作中常犯的错误"
 excerpt: "整理软件开发中常见的工程问题：混乱的代码、重复造轮子、过度设计、低估工作量、缺少测试、糟糕的提交、无效工作、注释与日志缺失，以及性能意识不足。"
 date: 2026-08-15 18:28:21 +0800
+image:
+  path: /assets/img/posts/2026-08-15/common-software-engineering-mistakes-cover.png
+  alt: 工作中常犯的错误封面
 categories: ["工程化"]
 tags: ["代码质量", "工程化"]
 source_platform: PingCode
