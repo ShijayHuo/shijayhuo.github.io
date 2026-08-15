@@ -2,12 +2,17 @@
 layout: post
 title: "RxJS 全面解析"
 pin: true
+image:
+  path: /assets/img/posts/pingcode-yydc38/cover.png
+  alt: RxJS 全面解析封面
 date: 2022-09-29 09:52:42 +0800
-categories: ["前端","框架"]
+categories: ["框架"]
 tags: ["RxJS"]
 source_platform: PingCode
 source_url: "https://pingcode.com/spaces/tCjjncWVbJ/pages/YYdc38"
 ---
+
+> 最初发布于 [RxJS 全面解析](https://zhuanlan.zhihu.com/p/583539989)
 
 ## 前言
 
