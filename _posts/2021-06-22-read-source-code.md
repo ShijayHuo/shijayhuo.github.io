@@ -1,6 +1,7 @@
 ---
 layout: post
 title: "如何阅读源代码？"
+pin: true
 date: 2021-06-22 14:25:32 +0800
 categories: ["程序人生"]
 tags: ["程序员修炼之道","技术分享"]
