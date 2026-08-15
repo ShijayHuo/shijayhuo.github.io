@@ -1,7 +1,9 @@
 ---
 layout: post
 title: "Worktile 权限设计与实现"
-pin: true
+image:
+  path: /assets/img/posts/juejin-7063304034534293511/cover.jpg
+  alt: Worktile 权限设计与实现封面
 excerpt: "这个项目已经持续了9年之久，书写了研发团队的历史长卷，我作为“后来者”有幸地参与其中。在过去研发的一年里，做的事情大多数是对原有功能的增强和重构，也学习和总结了 一点点Worktile核心技术和知识，"
 date: 2022-02-11 12:30:39 +0800
 categories: ["后端","架构"]

@@ -1,0 +1,229 @@
+---
+---
+
+@use 'abstracts/variables' with (
+  $theme: '{{ site.theme_mode }}'
+);
+
+/* prettier-ignore */
+@use 'main
+{%- if jekyll.environment == 'production' -%}
+  .bundle
+{%- endif -%}
+';
+
+/* Responsive diagrams used by the architecture article series. */
+.arch-note {
+  margin: 1.25rem 0;
+  padding: 1rem 1.15rem;
+  border-left: 4px solid #4b8cff;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--card-bg, #fff) 88%, #4b8cff 12%);
+}
+
+.arch-panel {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  overflow-x: auto;
+  color: #edf6ff;
+  border-radius: 0.8rem;
+  background: #2d3d59;
+}
+
+.arch-panel h3,
+.arch-panel h4 {
+  margin-top: 0;
+  color: #13bdf2;
+}
+
+.arch-panel strong {
+  color: #ff8a3d;
+}
+
+.arch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+  margin: 1rem 0;
+}
+
+.arch-card,
+.arch-layer {
+  padding: 0.9rem;
+  border: 1px dashed #90a4be;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--card-bg, #fff) 94%, #4b8cff 6%);
+}
+
+.arch-card h4,
+.arch-layer h4 {
+  margin: 0 0 0.65rem;
+}
+
+.arch-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.arch-node,
+.arch-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.1rem;
+  padding: 0.35rem 0.75rem;
+  color: #26354d;
+  border: 1px solid #d8e1ec;
+  border-radius: 999px;
+  background: #f7fafe;
+  text-align: center;
+}
+
+.arch-node.blue {
+  color: #fff;
+  border-color: #4aaef0;
+  background: #4aaef0;
+}
+.arch-node.green {
+  color: #fff;
+  border-color: #4fcb79;
+  background: #4fcb79;
+}
+.arch-node.red {
+  color: #fff;
+  border-color: #ff8f94;
+  background: #ff8f94;
+}
+.arch-node.purple {
+  color: #fff;
+  border-color: #a785ef;
+  background: #a785ef;
+}
+.arch-node.orange {
+  color: #fff;
+  border-color: #ff9d20;
+  background: #ff9d20;
+}
+.arch-node.cyan {
+  color: #fff;
+  border-color: #08bdd2;
+  background: #08bdd2;
+}
+
+.arch-stack {
+  display: grid;
+  gap: 0.8rem;
+  margin: 1.25rem 0;
+}
+
+.arch-stack .arch-layer {
+  position: relative;
+}
+
+.arch-stack .arch-layer:not(:last-child)::after {
+  content: '↓';
+  position: absolute;
+  left: 50%;
+  bottom: -1rem;
+  z-index: 2;
+  color: #6d7f98;
+  font-weight: 700;
+}
+
+.arch-tree {
+  display: grid;
+  gap: 0.9rem;
+  min-width: 600px;
+}
+
+.arch-branch {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.arch-branch > strong {
+  display: block;
+  padding: 0.65rem 0.85rem;
+  color: #fff;
+  border-radius: 0.5rem;
+  background: #315f91;
+}
+
+.arch-branch ul {
+  margin: 0;
+  padding: 0.65rem 0.85rem 0.65rem 1.9rem;
+  color: #26354d;
+  border-left: 3px solid #e6a84c;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--card-bg, #fff) 94%, #e6a84c 6%);
+}
+
+.arch-chip-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 1rem 0 0;
+}
+
+.arch-chip-cloud .arch-chip:nth-child(3n + 1) {
+  transform: translateY(-0.2rem);
+}
+.arch-chip-cloud .arch-chip:nth-child(4n + 2) {
+  transform: translateY(0.25rem);
+}
+
+.arch-equation {
+  margin: 0.9rem 0;
+  padding: 0.8rem;
+  color: #26354d;
+  border-radius: 0.55rem;
+  background: #fff;
+  text-align: center;
+}
+
+.arch-equation b {
+  color: #f23b34;
+}
+
+.arch-caption {
+  margin: -0.65rem 0 1.25rem;
+  color: var(--text-muted-color, #6c757d);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .arch-panel {
+    padding: 1rem;
+  }
+  .arch-branch {
+    grid-template-columns: 150px 1fr;
+  }
+  .arch-tree {
+    min-width: 600px;
+  }
+}
+
+/* Preserve the full composition of migrated wide-format article covers. */
+.preview-img img[src*='/assets/img/posts/pingcode-yydc38/cover.png'],
+.preview-img img[src*='/assets/img/posts/juejin-7063304034534293511/cover.jpg'],
+.preview-img img[src*='/assets/img/posts/juejin-7063295421585555492/cover.jpg'] {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.preview-img img[src*='/assets/img/posts/pingcode-yydc38/cover.png'] {
+  background: #e4f4fd;
+}
+
+.preview-img img[src*='/assets/img/posts/juejin-7063304034534293511/cover.jpg'] {
+  background: #fff;
+}
+
+.preview-img img[src*='/assets/img/posts/juejin-7063295421585555492/cover.jpg'] {
+  background: #e8f6ff;
+}
