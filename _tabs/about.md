@@ -1,4 +1,6 @@
 ---
+layout: page-with-comments
+comments: true
 icon: fas fa-info-circle
 order: 4
 ---
