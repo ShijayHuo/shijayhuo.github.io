@@ -14,9 +14,9 @@ timezone: Asia/Shanghai
 # jekyll-seo-tag settings › https://github.com/jekyll/jekyll-seo-tag/blob/master/docs/usage.md
 # ↓ --------------------------
 
-title: Ajie's Blog # the main title
+title: Ajie's 思源地 # the main title
 
-tagline: Hi, everyone! # it will display as the subtitle
+tagline: 保持好奇，持续学习 # it will display as the subtitle
 
 description: >- # used by seo meta and the atom feed
   Shijay Huo's personal tech blog — Node.js, full-stack development, and AI applications.
