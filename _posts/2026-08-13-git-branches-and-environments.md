@@ -4,7 +4,6 @@ title: Git 分支与部署环境
 date: 2026-08-13 14:00 +0800
 image:
   path: /assets/img/posts/2026-08-13/git-branches-and-environments-cover.png
-  alt: Git 分支与部署环境封面
 tags: [Git, 项目协作]
 categories: [项目协作]
 ---

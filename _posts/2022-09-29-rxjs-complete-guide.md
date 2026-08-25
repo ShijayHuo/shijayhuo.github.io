@@ -4,7 +4,6 @@ title: "RxJS 全面解析"
 pin: true
 image:
   path: /assets/img/posts/pingcode-yydc38/cover.png
-  alt: RxJS 全面解析封面
 date: 2022-09-29 09:52:42 +0800
 categories: ["框架"]
 tags: ["RxJS"]

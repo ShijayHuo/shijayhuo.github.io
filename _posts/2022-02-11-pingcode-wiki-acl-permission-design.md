@@ -4,7 +4,6 @@ title: "PingCode Wiki 权限设计之ACL"
 pin: true
 image:
   path: /assets/img/posts/juejin-7063295421585555492/cover.jpg
-  alt: PingCode Wiki 权限设计之 ACL 封面
 excerpt: "2021年 Wiki 加入了很多强硬的特性，其中包括协同编辑 、页面权限、表情符号等，这些功能给用户带来了更好的体验。本文介绍了页面权限，同时总结一下开发阶段涉及到的技术、遇到的问题及解决方法。"
 date: 2022-02-11 11:57:27 +0800
 categories: ["后端","架构"]
