@@ -5,8 +5,8 @@ excerpt: "之前只知道一万小时定律，但今天刷推时看到了西蒙�
 date: 2026-08-25 13:19 +0800
 categories: ["程序人生"]
 tags: ["学习方法"]
-image:
-  path: /assets/img/posts/2026-08-25/simon-learning-cover.png
+# image:
+#   path: /assets/img/posts/2026-08-25/simon-learning-cover.png
 ---
 
 之前只知道一万小时定律，但今天刷推时看到了西蒙学习法，脑海随即又把这两者联想了起来（因为它们都跟时间和学习这两个变量有关），当时科普了一下，觉得对于学习这件事我们时刻在发生，比较有意义，纯粹分享一下。

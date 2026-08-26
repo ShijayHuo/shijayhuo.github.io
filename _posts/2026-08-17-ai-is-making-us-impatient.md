@@ -7,6 +7,7 @@ categories: [程序人生]
 media_subpath: /assets/img/posts/2026-08-17
 image:
   path: human-judgment-with-ai.jpg
+published: false
 ---
 
 ## 前言
