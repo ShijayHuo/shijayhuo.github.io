@@ -3,7 +3,7 @@ layout: post
 title: "RxJS 全面解析"
 pin: true
 image:
-  path: /assets/img/posts/pingcode-yydc38/cover.png
+#   path: /assets/img/posts/pingcode-yydc38/cover.png
 date: 2022-09-29 09:52:42 +0800
 categories: ["框架"]
 tags: ["RxJS"]

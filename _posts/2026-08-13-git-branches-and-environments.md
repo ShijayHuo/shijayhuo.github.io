@@ -3,7 +3,7 @@ layout: post
 title: Git 分支与部署环境
 date: 2026-08-13 14:00 +0800
 image:
-  path: /assets/img/posts/2026-08-13/git-branches-and-environments-cover.png
+#   path: /assets/img/posts/2026-08-13/git-branches-and-environments-cover.png
 tags: [Git, 项目协作]
 categories: [项目协作]
 ---

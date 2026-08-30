@@ -7,7 +7,6 @@ tags: [面试, 招聘, 程序员]
 media_subpath: /assets/img/posts/2026-08-26
 image:
   path: interview-programmers-cover.png
-  alt: 两位程序员在轻松的共享空间里围绕电脑自然交流
 ---
 
 ## 前言

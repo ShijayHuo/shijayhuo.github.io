@@ -1,24 +1,31 @@
 ---
 layout: post
-title: Cordis 插件入门与源码解析
+title: DeepSeek Harness 的底层基石——Cordis（一）
 date: 2026-08-29 16:41:44 +0800
-categories: [后端, 架构]
-tags: [Cordis, DeepSeek Harness, 插件系统, 源码分析]
+categories: [Agent Harness, 架构]
+tags: [Cordis, DeepSeek Harness,dsh, 插件系统, 源码分析]
+image:
+  path: /assets/img/posts/2026-08-29/deepseek-harness-everything-is-a-plugin-cover.png
+  alt: DeepSeek Harness：Everything is a Plugin
 ---
 
 ## 什么是 Cordis？
-### 来自作者的解释
-Cordis 是一个**元框架 (Meta Framework)**，即一个用于构建框架的框架。
+### 作者的解释
+> Cordis 是一个**元框架 (Meta Framework)**，即一个用于构建框架的框架。
+> 
+> Cordis 的名字来源于拉丁语的心。我希望它能成为未来软件 (至少是我开发的软件) 的核心。
+>
+> 作为一个元框架，Cordis 并不耦合任何具体的领域或场景。它所提供的能力是大多数框架都不足为奇的——插件系统，但在这个系统背后却是大多数框架都没有达成的目标：可逆性。
 
-Cordis 的名字来源于拉丁语的心。我希望它能成为未来软件 (至少是我开发的软件) 的核心。
-
-作为一个元框架，Cordis 并不耦合任何具体的领域或场景。它所提供的能力是大多数框架都不足为奇的——插件系统，但在这个系统背后却是大多数框架都没有达成的目标：可逆性。
-
-见[原文](https://koishi.chat/zh-CN/cookbook/design/disposable.html#%E5%8F%AF%E9%80%86%E7%9A%84%E6%8F%92%E4%BB%B6%E7%B3%BB%E7%BB%9F)
+详见[原文](https://koishi.chat/zh-CN/cookbook/design/disposable.html#%E5%8F%AF%E9%80%86%E7%9A%84%E6%8F%92%E4%BB%B6%E7%B3%BB%E7%BB%9F)
 
 ### DeepSeek Harness 官方的解释
-> Cordis 是 DeepSeek Harness 底层的插件框架：它是一个小型运行时，其中的每项能力，包括工具、LLM（大语言模型）适配器、文件访问乃至 agent loop（智能体循环）本身，都是挂载到共享上下文中的插件。										   		——[DeepSeek 官方 Cordis 总览](https://deepseek-harness.github.io/deepseek-harness/develop/cordis-tutorial/)
+> Cordis 是 DeepSeek Harness 底层的插件框架：它是一个小型运行时，其中的每项能力，包括工具、LLM（大语言模型）适配器、文件访问乃至 agent loop（智能体循环）本身，都是挂载到共享上下文中的插件。       										   		
+> 
+>——[DeepSeek 官方 Cordis 总览](https://deepseek-harness.github.io/deepseek-harness/develop/cordis-tutorial/)
 >
+
+![Cordis 核心与可装卸插件模块组成的可逆插件系统](/assets/img/posts/2026-08-29/cordis-plugin-guide-cover-v2.png)
 
 ### 什么是插件？
 它来自一种[设计哲学](https://github.com/cordiverse/paper)，有很多熟悉的插件系统也类似，比如，Koa2 的  [koa-compose](https://github.com/koajs/compose/blob/master/index.js)、[slate.js](https://github.com/ianstormtaylor/slate/blob/main/packages/slate/src/create-editor.ts)等。
@@ -217,5 +224,3 @@ class Fiber {
 - [Cordis Include 源码](https://github.com/cordiverse/cordis/blob/main/packages/include/src/index.ts)
 - [Koa Compose 源码](https://github.com/koajs/compose/blob/master/index.js)
 - [Slate `createEditor` 源码](https://github.com/ianstormtaylor/slate/blob/main/packages/slate/src/create-editor.ts)
-
-
