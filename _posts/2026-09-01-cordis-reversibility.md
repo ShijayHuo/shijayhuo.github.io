@@ -76,7 +76,7 @@ flowchart TD
 
 ## 源码探究
 ### Fiber.effect
-<img src="/assets/img/posts/2026-09-01/cordis-effect-beginner-flow.png" width="1200" title="" crop="0,0,1,1" id="u9857b523" class="ne-image">
+<img src="/assets/img/posts/2026-09-01/cordis-effect-beginner-flow.png" width="1200" alt="Cordis Fiber effect 的注册、持有与回收流程" class="ne-image">
 
 上图是通过源码整理出来的，可以先简单看一下，推荐后面看源码的时候可以频繁对照理解，下面简化了[源码](https://github.com/cordiverse/cordis/blob/b912d3997ab8e819f8b112edc0b8ee0dfd77132d/packages/core/src/fiber.ts#L275)，伪代码如下：
 
