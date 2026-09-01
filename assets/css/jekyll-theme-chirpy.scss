@@ -233,3 +233,9 @@
   object-fit: contain;
   background: #fff7e8;
 }
+
+/* Preserve the complete Cordis cover when a desktop card grows with its excerpt. */
+#post-list .preview-img img[src*='/assets/img/posts/2026-08-29/deepseek-harness-everything-is-a-plugin-cover.png'] {
+  object-fit: contain;
+  background: #031f35;
+}
