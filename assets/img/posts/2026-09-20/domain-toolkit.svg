@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="558" viewBox="0 0 1080 558" role="img" aria-labelledby="title desc" data-quality-profile="standard">
+<title id="title">领域建模工具</title><desc id="desc"></desc>
+<style>text { font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif; }</style>
+<defs>
+<marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/></marker>
+<marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#16a34a"/></marker>
+<marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9333ea"/></marker>
+<marker id="arrow-gray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/></marker>
+</defs>
+<rect x="0" y="0" width="1080" height="558" rx="8" fill="#ffffff" stroke="none" stroke-width="1.5" data-graph-role="background"/>
+<rect x="48" y="40" width="600" height="300" rx="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5" data-graph-role="container"/>
+<text x="72" y="80" font-size="23" fill="#111827" text-anchor="start" font-weight="600">聚合</text>
+<rect x="88" y="140" width="224" height="96" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="root" data-node-id="root"/>
+<text x="200.0" y="188.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">草稿</text>
+<text x="200.0" y="216.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">实体 · 聚合根</text>
+<rect x="416" y="108" width="192" height="64" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="node" data-node-id="node"/>
+<text x="512.0" y="148.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">节点</text>
+<rect x="416" y="244" width="192" height="64" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="link" data-node-id="link"/>
+<text x="512.0" y="284.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">连线</text>
+<path id="edge-1" data-graph-role="edge" data-source="root" data-target="node" d="M 312,164 L 360,164 L 360,140 L 416,140" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<path id="edge-2" data-graph-role="edge" data-source="root" data-target="link" d="M 312,212 L 360,212 L 360,276 L 416,276" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<rect x="792" y="140" width="240" height="96" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="repo" data-node-id="repo"/>
+<text x="912.0" y="188.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">仓储</text>
+<text x="912.0" y="216.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">加载 · 保存</text>
+<path d="M 648,188 L 792,188" fill="none" stroke="#6b7280" stroke-width="1.5" data-graph-role="edge"/>
+<rect x="48" y="404" width="456" height="112" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="value" data-node-id="value"/>
+<text x="276.0" y="460.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">值对象</text>
+<text x="276.0" y="488.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">金额 = 数值 + 币种</text>
+<rect x="576" y="404" width="456" height="112" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="service" data-node-id="service"/>
+<text x="804.0" y="460.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">领域服务</text>
+<text x="804.0" y="488.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">无自然实体归属的业务操作</text>
+</svg>

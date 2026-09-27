@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="400" viewBox="0 0 1080 400" role="img" aria-labelledby="title desc" data-quality-profile="standard">
+<title id="title">草稿、版本与实例</title><desc id="desc"></desc>
+<style>text { font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif; }</style>
+<defs>
+<marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/></marker>
+<marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#16a34a"/></marker>
+<marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9333ea"/></marker>
+<marker id="arrow-gray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/></marker>
+</defs>
+<rect x="0" y="0" width="1080" height="400" rx="8" fill="#ffffff" stroke="none" stroke-width="1.5" data-graph-role="background"/>
+<rect x="64" y="144" width="224" height="112" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="draft" data-node-id="draft"/>
+<text x="176.0" y="200.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">草稿</text>
+<text x="176.0" y="228.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">可编辑</text>
+<rect x="488" y="48" width="184" height="96" rx="8" fill="#eff6ff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="v1" data-node-id="v1"/>
+<text x="580.0" y="96.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">v1</text>
+<text x="580.0" y="124.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">固定快照</text>
+<rect x="488" y="256" width="184" height="96" rx="8" fill="#eff6ff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="v2" data-node-id="v2"/>
+<text x="580.0" y="304.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">v2</text>
+<text x="580.0" y="332.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">固定快照</text>
+<rect x="840" y="40" width="192" height="80" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="a" data-node-id="a"/>
+<text x="936.0" y="80.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">实例 A</text>
+<text x="936.0" y="108.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">使用 v1</text>
+<rect x="840" y="176" width="192" height="80" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="b" data-node-id="b"/>
+<text x="936.0" y="216.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">实例 B</text>
+<text x="936.0" y="244.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">使用 v1</text>
+<path id="edge-1" data-graph-role="edge" data-source="draft" data-target="v1" d="M 288,168 L 384,168 L 384,96 L 488,96" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<text x="428" y="77" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="400">发布</text>
+<path id="edge-2" data-graph-role="edge" data-source="draft" data-target="v2" d="M 288,232 L 384,232 L 384,304 L 488,304" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<text x="430" y="286" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="400">再发布</text>
+<path id="edge-3" data-graph-role="edge" data-source="v1" data-target="a" d="M 672,80 L 840,80" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<path id="edge-4" data-graph-role="edge" data-source="v1" data-target="b" d="M 672,120 L 760,120 L 760,216 L 840,216" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+</svg>

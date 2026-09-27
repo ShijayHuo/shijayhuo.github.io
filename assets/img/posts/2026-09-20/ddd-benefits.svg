@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="280" viewBox="0 0 1080 280" role="img" aria-labelledby="title desc" data-quality-profile="standard">
+<title id="title">DDD 的五项收益</title><desc id="desc"></desc>
+<style>text { font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif; }</style>
+<defs>
+<marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/></marker>
+<marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#16a34a"/></marker>
+<marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9333ea"/></marker>
+<marker id="arrow-gray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/></marker>
+</defs>
+<rect x="0" y="0" width="1080" height="280" rx="8" fill="#ffffff" stroke="none" stroke-width="1.5" data-graph-role="background"/>
+<rect x="48" y="40" width="184" height="200" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="decoration"/>
+<text x="140" y="203" font-size="23" fill="#111827" text-anchor="middle" font-weight="600">术语一致</text>
+<rect x="248" y="40" width="184" height="200" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="decoration"/>
+<text x="340" y="203" font-size="23" fill="#111827" text-anchor="middle" font-weight="600">规则集中</text>
+<rect x="448" y="40" width="184" height="200" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="decoration"/>
+<text x="540" y="203" font-size="23" fill="#111827" text-anchor="middle" font-weight="600">边界清晰</text>
+<rect x="648" y="40" width="184" height="200" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="decoration"/>
+<text x="740" y="203" font-size="23" fill="#111827" text-anchor="middle" font-weight="600">模型可演进</text>
+<rect x="848" y="40" width="184" height="200" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="decoration"/>
+<text x="940" y="203" font-size="23" fill="#111827" text-anchor="middle" font-weight="600">投入有重点</text>
+<path d="M 104,86 H 154 V 122 H 126 L 112,134 V 122 H 104 Z M 140,102 H 176 V 142 H 164 L 152,154 V 142 H 140" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-graph-role="decoration"/>
+<path d="M 302,84 H 322 V 104 H 302 Z M 302,118 H 322 V 138 H 302 Z M 302,152 H 322 V 172 H 302 Z M 322,94 H 342 V 118 H 366 M 322,128 H 366 M 322,162 H 342 V 138 H 366 M 366,110 H 390 V 148 H 366 Z" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-graph-role="decoration"/>
+<path d="M 506,86 H 572 V 158 H 506 Z M 518,100 H 540 V 122 H 518 Z M 546,132 H 562 V 148 H 546 Z M 586,110 H 604 V 132 H 586 Z" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-graph-role="decoration"/>
+<path d="M 684,102 H 716 V 142 H 684 Z M 732,122 H 752 M 742,112 L 752,122 L 742,132 M 768,94 H 800 V 150 H 768 Z" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-graph-role="decoration"/>
+<circle cx="940" cy="124" r="25" fill="#2563eb" data-graph-role="decoration"/>
+<circle cx="897" cy="93" r="7" fill="#d1d5db" data-graph-role="decoration"/>
+<circle cx="983" cy="153" r="7" fill="#d1d5db" data-graph-role="decoration"/>
+</svg>
