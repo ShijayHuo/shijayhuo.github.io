@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="492" viewBox="0 0 1080 492" role="img" aria-labelledby="title desc" data-quality-profile="standard">
+<title id="title">分层职责</title><desc id="desc"></desc>
+<style>text { font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif; }</style>
+<defs>
+<marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/></marker>
+<marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#16a34a"/></marker>
+<marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9333ea"/></marker>
+<marker id="arrow-gray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/></marker>
+</defs>
+<rect x="0" y="0" width="1080" height="492" rx="8" fill="#ffffff" stroke="none" stroke-width="1.5" data-graph-role="background"/>
+<rect x="48" y="40" width="560" height="108" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="p" data-node-id="p"/>
+<text x="328.0" y="94.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">接口层</text>
+<text x="328.0" y="122.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">接收请求 · 转换响应</text>
+<rect x="48" y="192" width="560" height="108" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="a" data-node-id="a"/>
+<text x="328.0" y="246.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">应用层</text>
+<text x="328.0" y="274.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">编排步骤 · 协调事务</text>
+<rect x="48" y="344" width="560" height="108" rx="8" fill="#eff6ff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="d" data-node-id="d"/>
+<text x="328.0" y="398.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">领域层</text>
+<text x="328.0" y="426.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">业务概念 · 业务规则</text>
+<rect x="792" y="180" width="240" height="132" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="i" data-node-id="i"/>
+<text x="912.0" y="246.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">基础设施层</text>
+<text x="912.0" y="274.0" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">存储 · 外部接入</text>
+<path id="edge-1" data-graph-role="edge" data-source="p" data-target="a" d="M 144,148 L 144,192" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<path id="edge-2" data-graph-role="edge" data-source="a" data-target="d" d="M 144,300 L 144,344" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<path id="edge-3" data-graph-role="edge" data-source="a" data-target="i" d="M 608,246 L 792,246" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<text x="700" y="228" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="400">经接口调用</text>
+</svg>

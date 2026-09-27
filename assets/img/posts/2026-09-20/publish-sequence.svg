@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="744" viewBox="0 0 1080 744" role="img" aria-labelledby="title desc" data-quality-profile="standard">
+<title id="title">发布版本时序</title><desc id="desc"></desc>
+<style>text { font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif; }</style>
+<defs>
+<marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/></marker>
+<marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#16a34a"/></marker>
+<marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9333ea"/></marker>
+<marker id="arrow-gray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/></marker>
+</defs>
+<rect x="0" y="0" width="1080" height="744" rx="8" fill="#ffffff" stroke="none" stroke-width="1.5" data-graph-role="background"/>
+<rect x="48" y="40" width="184" height="64" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="header140" data-node-id="header140"/>
+<text x="140.0" y="80.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">接口层</text>
+<line x1="140" y1="104" x2="140" y2="686" stroke="#d1d5db" stroke-dasharray="5 6" data-graph-role="decoration"/>
+<rect x="280" y="40" width="184" height="64" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="header372" data-node-id="header372"/>
+<text x="372.0" y="80.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">应用层</text>
+<line x1="372" y1="104" x2="372" y2="686" stroke="#d1d5db" stroke-dasharray="5 6" data-graph-role="decoration"/>
+<rect x="568" y="40" width="184" height="64" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="header660" data-node-id="header660"/>
+<text x="660.0" y="80.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">领域层</text>
+<line x1="660" y1="104" x2="660" y2="686" stroke="#d1d5db" stroke-dasharray="5 6" data-graph-role="decoration"/>
+<rect x="848" y="40" width="184" height="64" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" data-graph-role="node" id="header940" data-node-id="header940"/>
+<text x="940.0" y="80.0" font-size="24" fill="#111827" text-anchor="middle" font-weight="600">基础设施层</text>
+<line x1="940" y1="104" x2="940" y2="686" stroke="#d1d5db" stroke-dasharray="5 6" data-graph-role="decoration"/>
+<rect x="280" y="224" width="752" height="404" rx="8" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.5" data-graph-role="background"/>
+<line x1="372" y1="224" x2="372" y2="628" stroke="#d1d5db" stroke-dasharray="5 6" data-graph-role="decoration"/>
+<line x1="660" y1="224" x2="660" y2="628" stroke="#d1d5db" stroke-dasharray="5 6" data-graph-role="decoration"/>
+<line x1="940" y1="224" x2="940" y2="628" stroke="#d1d5db" stroke-dasharray="5 6" data-graph-role="decoration"/>
+<rect x="366" y="140" width="12" height="532" rx="8" fill="#dbeafe" stroke="#d1d5db" stroke-width="1.5" data-graph-role="decoration"/>
+<rect x="654" y="386" width="12" height="54" rx="8" fill="#dbeafe" stroke="#d1d5db" stroke-width="1.5" data-graph-role="decoration"/>
+<rect x="934" y="260" width="12" height="78" rx="8" fill="#dbeafe" stroke="#d1d5db" stroke-width="1.5" data-graph-role="decoration"/>
+<rect x="934" y="492" width="12" height="18" rx="8" fill="#dbeafe" stroke="#d1d5db" stroke-width="1.5" data-graph-role="decoration"/>
+<rect x="934" y="552" width="12" height="52" rx="8" fill="#dbeafe" stroke="#d1d5db" stroke-width="1.5" data-graph-role="decoration"/>
+<path id="edge-1" data-graph-role="edge" data-source="" data-target="" d="M 140,144 L 366,144" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<text x="253.0" y="132" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="400">发布命令</text>
+<path id="edge-2" data-graph-role="edge" data-source="" data-target="" d="M 378,168 L 430,168 L 430,200 L 378,200" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<text x="450" y="192" font-size="18" fill="#2563eb" text-anchor="start" font-weight="400">检查权限</text>
+<rect x="292" y="253" width="64" height="30" rx="8" fill="#e5e7eb" stroke="none" stroke-width="1.5" data-graph-role="decoration"/>
+<text x="324" y="274" font-size="14" fill="#111827" text-anchor="middle" font-weight="600">本地事务</text>
+<path id="edge-3" data-graph-role="edge" data-source="" data-target="" d="M 378,268 L 934,268" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<rect x="557.0" y="235" width="198" height="25" rx="8" fill="#f9fafb" stroke="none" stroke-width="1.5" data-graph-role="decoration"/>
+<text x="656.0" y="256" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="400">加载草稿 · 锁定记录</text>
+<path id="edge-4" data-graph-role="edge" data-source="" data-target="" d="M 378,328 L 934,328" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<rect x="603.0" y="295" width="106" height="25" rx="8" fill="#f9fafb" stroke="none" stroke-width="1.5" data-graph-role="decoration"/>
+<text x="656.0" y="316" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="400">取得版本号</text>
+<path id="edge-5" data-graph-role="edge" data-source="" data-target="" d="M 378,388 L 654,388" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<text x="516.0" y="376" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="400">校验并生成快照</text>
+<path id="edge-6" data-graph-role="edge" data-source="" data-target="" d="M 654,440 L 378,440" fill="none" stroke="#6b7280" stroke-width="1.8" marker-end="url(#arrow-gray)" stroke-dasharray="6 5"/>
+<text x="516.0" y="428" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">版本快照</text>
+<path id="edge-7" data-graph-role="edge" data-source="" data-target="" d="M 378,500 L 934,500" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<rect x="557.0" y="467" width="198" height="25" rx="8" fill="#f9fafb" stroke="none" stroke-width="1.5" data-graph-role="decoration"/>
+<text x="656.0" y="488" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="400">保存版本 · 更新计数</text>
+<path id="edge-8" data-graph-role="edge" data-source="" data-target="" d="M 378,560 L 934,560" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+<rect x="612.0" y="527" width="88" height="25" rx="8" fill="#f9fafb" stroke="none" stroke-width="1.5" data-graph-role="decoration"/>
+<text x="656.0" y="548" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="400">提交事务</text>
+<path id="edge-9" data-graph-role="edge" data-source="" data-target="" d="M 934,608 L 378,608" fill="none" stroke="#6b7280" stroke-width="1.8" marker-end="url(#arrow-gray)" stroke-dasharray="6 5"/>
+<rect x="612.0" y="575" width="88" height="25" rx="8" fill="#f9fafb" stroke="none" stroke-width="1.5" data-graph-role="decoration"/>
+<text x="656.0" y="596" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">提交成功</text>
+<path id="edge-10" data-graph-role="edge" data-source="" data-target="" d="M 366,668 L 140,668" fill="none" stroke="#6b7280" stroke-width="1.8" marker-end="url(#arrow-gray)" stroke-dasharray="6 5"/>
+<text x="253.0" y="656" font-size="18" fill="#6b7280" text-anchor="middle" font-weight="400">版本标识</text>
+<text x="48" y="718" font-size="16" fill="#6b7280" text-anchor="start" font-weight="400">实线：调用　　虚线：返回</text>
+</svg>

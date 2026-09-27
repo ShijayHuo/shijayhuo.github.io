@@ -4,9 +4,6 @@ title: DeepSeek Harness 的底层基石——Cordis（一）
 date: 2026-08-29 16:41:44 +0800
 categories: [Agent Harness, 架构]
 tags: [Cordis, DeepSeek Harness,dsh, 插件系统, 源码分析]
-image:
-  path: /assets/img/posts/2026-08-29/deepseek-harness-everything-is-a-plugin-cover.png
-  alt: DeepSeek Harness：Everything is a Plugin
 ---
 
 ## 什么是 Cordis？
