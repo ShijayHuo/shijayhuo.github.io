@@ -1,15 +1,22 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { createKnowledgeBundle, saveKnowledgeBundle } from "../src/bundle.ts";
+import { buildAndSave } from "../src/build-job.ts";
+import {
+  VALIDATION_EMBEDDING_BASE_URL,
+  VALIDATION_EMBEDDING_DIMENSIONS,
+  VALIDATION_EMBEDDING_MODEL,
+} from "../src/limits.ts";
+import { validationProfileError } from "../src/embedding-space.ts";
 import { createMockEmbedding } from "../src/mock-adapter.ts";
 import { createOpenAIEmbedding } from "../src/openai-adapter.ts";
 import { listPublishedPosts } from "../src/publish.ts";
-import { readServiceConfig } from "../src/handler.ts";
+import { redactSecrets, secretValues } from "../src/redact.ts";
 import type { EmbeddingCache } from "../src/types.ts";
 
 const backendRoot = path.join(import.meta.dirname, "..");
 const repoRoot = path.join(backendRoot, "..");
 const generatedModule = path.join(backendRoot, "src/generated/knowledge.ts");
+const secrets = secretValues();
 
 function readFlag(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -17,30 +24,56 @@ function readFlag(name: string): string | undefined {
   return process.argv[index + 1];
 }
 
-const mock = process.argv.includes("--mock");
-const root = path.resolve(readFlag("--root") ?? repoRoot);
-const out = path.resolve(readFlag("--out") ?? (mock ? path.join(backendRoot, "dist/mock-bundle.json") : generatedModule));
-const cacheFile = path.resolve(readFlag("--cache") ?? path.join(backendRoot, ".cache/embeddings.json"));
-
-if (mock && path.resolve(out) === path.resolve(generatedModule)) {
-  console.error("mock 不能写入 Worker 知识模块。");
+function fail(message: string): never {
+  console.error(redactSecrets(message, secrets));
+  console.error("已停止，没有替换知识包。");
   process.exit(1);
 }
+
+const mock = process.argv.includes("--mock");
+const validation = process.argv.includes("--validation");
+const writeWorkerModule = process.argv.includes("--write-worker-module");
+if (mock && validation) fail("mock 不能用于真实验证构建。");
+
+const root = path.resolve(readFlag("--root") ?? repoRoot);
+const defaultOut = mock
+  ? path.join(backendRoot, "dist/mock-bundle.json")
+  : path.join(backendRoot, "dist/knowledge/bundle.json");
+const out = path.resolve(writeWorkerModule ? generatedModule : (readFlag("--out") ?? defaultOut));
+const cacheFile = path.resolve(readFlag("--cache") ?? path.join(backendRoot, ".cache/embeddings.json"));
+
+if (mock && (out === generatedModule || writeWorkerModule)) fail("mock 不能写入 Worker 知识模块。");
+if (!mock && out === generatedModule && !writeWorkerModule) {
+  fail("真实向量不会写入 Worker 模块，除非显式 --write-worker-module。");
+}
+
+const embeddingKey = (process.env.EMBEDDING_API_KEY || process.env.BAILIAN_EMBEDDING_API_KEY || "").trim();
+const embeddingBase = (process.env.EMBEDDING_BASE_URL || (validation ? VALIDATION_EMBEDDING_BASE_URL : "")).trim();
+const embeddingModel = (process.env.EMBEDDING_MODEL || (validation ? VALIDATION_EMBEDDING_MODEL : "")).trim();
+const embeddingDimensions = (process.env.EMBEDDING_DIMENSIONS || (validation ? String(VALIDATION_EMBEDDING_DIMENSIONS) : "")).trim();
 
 const embedding = mock
   ? createMockEmbedding()
   : (() => {
-    const config = readServiceConfig({
-      EMBEDDING_API_KEY: process.env.EMBEDDING_API_KEY,
-      EMBEDDING_BASE_URL: process.env.EMBEDDING_BASE_URL,
-      EMBEDDING_MODEL: process.env.EMBEDDING_MODEL,
-      EMBEDDING_DIMENSIONS: process.env.EMBEDDING_DIMENSIONS,
-    }, "EMBEDDING");
-    if (!config?.dimensions) {
-      console.error("缺少 embedding 的 baseURL、model、key 或维度，已停止，没有写入知识包。");
-      process.exit(1);
+    if (!embeddingKey || !embeddingBase || !embeddingModel || !embeddingDimensions) {
+      fail("没有真实 embedding 配置，不会用哈希向量冒充。");
     }
-    return createOpenAIEmbedding(config);
+    const dimensions = Number(embeddingDimensions);
+    if (validation) {
+      const profileError = validationProfileError({
+        provider: "openai",
+        model: embeddingModel,
+        dimensions,
+        baseURL: embeddingBase,
+      });
+      if (profileError) fail(profileError);
+    }
+    return createOpenAIEmbedding({
+      apiKey: embeddingKey,
+      baseURL: embeddingBase,
+      model: embeddingModel,
+      dimensions,
+    });
   })();
 
 let cache: EmbeddingCache | null = null;
@@ -50,27 +83,21 @@ try {
   cache = null;
 }
 
-const documents = listPublishedPosts(root, new Date());
-const result = await createKnowledgeBundle({
-  documents,
-  embedding,
-  cache,
-  onCache(next) {
-    mkdirSync(path.dirname(cacheFile), { recursive: true });
-    const temporary = `${cacheFile}.tmp`;
-    writeFileSync(temporary, JSON.stringify(next));
-    renameSync(temporary, cacheFile);
-  },
-});
-await saveKnowledgeBundle(out, result.bundle);
-console.log(JSON.stringify({
-  documents: result.bundle.manifest.documents.length,
-  chunks: result.bundle.manifest.chunkCount,
-  embedded: result.embedded,
-  reused: result.reused,
-  provider: result.bundle.manifest.embedding.provider,
-  model: result.bundle.manifest.embedding.model,
-  dimensions: result.bundle.manifest.embedding.dimensions,
-  knowledgeVersion: result.bundle.manifest.knowledgeVersion,
-  out,
-}));
+try {
+  const summary = await buildAndSave({
+    documents: listPublishedPosts(root, new Date()),
+    embedding,
+    cache,
+    out,
+    onCache(next) {
+      mkdirSync(path.dirname(cacheFile), { recursive: true });
+      const temporary = `${cacheFile}.tmp`;
+      writeFileSync(temporary, JSON.stringify(next));
+      renameSync(temporary, cacheFile);
+    },
+  });
+  console.log(JSON.stringify(summary));
+} catch (error) {
+  const message = error instanceof Error ? error.message : "构建失败。";
+  fail(message);
+}

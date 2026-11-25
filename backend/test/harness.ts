@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { embeddingRevision } from "../src/embedding-space.ts";
 import { createKnowledgeVersion, verifyKnowledgeBundle } from "../src/knowledge.ts";
 import { CHUNKER_VERSION } from "../src/limits.ts";
 import type { AskBindings, ChatAdapter, ChatMessage, Chunk, EmbeddingAdapter, KnowledgeBundle } from "../src/types.ts";
@@ -63,7 +64,9 @@ export async function createFixtureBundle(chunks: Chunk[]): Promise<KnowledgeBun
         provider: "mock",
         model: "mock-embedding-v1",
         dimensions,
-        revision: `mock-embedding-v1:${dimensions}`,
+        revision: embeddingRevision("mock-embedding-v1", dimensions),
+        baseURL: "",
+        encodingFormat: "float",
         inputTemplate: "text",
         queryPrefix: "",
         documentPrefix: "",
@@ -99,6 +102,9 @@ export function fixedEmbedding(vector: number[]): EmbeddingAdapter & { calls: st
     provider: "mock",
     model: "mock-embedding-v1",
     dimensions: vector.length,
+    baseURL: "",
+    encodingFormat: "float",
+    revision: embeddingRevision("mock-embedding-v1", vector.length),
     calls,
     async createEmbedding(input, signal) {
       if (signal?.aborted) throw new DOMException("aborted", "AbortError");

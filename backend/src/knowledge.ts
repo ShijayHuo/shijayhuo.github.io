@@ -1,4 +1,5 @@
-import { CHUNKER_VERSION, KNOWLEDGE_VERSION, SOURCE_ID, SOURCE_URL } from "./limits.ts";
+import { embeddingRevision, publicEmbeddingBaseURL } from "./embedding-space.ts";
+import { CHUNKER_VERSION, HASH_EMBEDDING_DIMENSIONS, KNOWLEDGE_VERSION, SOURCE_ID, SOURCE_URL } from "./limits.ts";
 import type { Chunk, KnowledgeBundle } from "./types.ts";
 
 export async function sha256Hex(text: string): Promise<string> {
@@ -26,6 +27,8 @@ export async function createKnowledgeVersion(bundle: KnowledgeBundle): Promise<s
       model: bundle.manifest.embedding.model,
       dimensions: bundle.manifest.embedding.dimensions,
       revision: bundle.manifest.embedding.revision,
+      baseURL: bundle.manifest.embedding.baseURL,
+      encodingFormat: bundle.manifest.embedding.encodingFormat,
       inputTemplate: bundle.manifest.embedding.inputTemplate,
       queryPrefix: bundle.manifest.embedding.queryPrefix,
       documentPrefix: bundle.manifest.embedding.documentPrefix,
@@ -57,6 +60,17 @@ export async function verifyKnowledgeBundle(bundle: KnowledgeBundle): Promise<st
   }
   if (embedding?.inputTemplate !== "text" || embedding.normalization !== "cosine") {
     errors.push("向量空间约定不一致。");
+  }
+  if (embedding && embedding.encodingFormat !== "float") errors.push("向量编码不是 float。");
+  if (embedding && embedding.revision !== embeddingRevision(embedding.model, embedding.dimensions)) {
+    errors.push("embedding 版本与模型或维度不一致。");
+  }
+  if (embedding?.provider === "mock") {
+    if (embedding.baseURL !== "") errors.push("哈希向量不能带真实地址。");
+    if (!embedding.model.startsWith("mock-embedding-")) errors.push("哈希向量不能冒充真实模型。");
+    if (embedding.dimensions === HASH_EMBEDDING_DIMENSIONS) errors.push("拒绝 512 维哈希向量。");
+  } else if (embedding && !publicEmbeddingBaseURL(embedding.baseURL)) {
+    errors.push("embedding 地址无效。");
   }
   if (embedding?.queryPrefix !== embedding?.documentPrefix) {
     errors.push("查询与文档不在同一向量空间。");

@@ -1,3 +1,4 @@
+import { embeddingSpaceError, publicEmbeddingBaseURL } from "./embedding-space.ts";
 import { verifyKnowledgeBundle, listChunksByIds } from "./knowledge.ts";
 import {
   DEFAULT_MIN_SCORE,
@@ -14,7 +15,8 @@ import { createMockChat, createMockEmbedding } from "./mock-adapter.ts";
 import { createOpenAIChat, createOpenAIEmbedding } from "./openai-adapter.ts";
 import { createPrompt } from "./prompt.ts";
 import { createQuotaKey, readTrustedIp, updateQuotaByKey } from "./quota.ts";
-import { createRetrievalQuery, createSourceList, encodeSse, isFollowUpQuestion, parseAskRequest } from "./protocol.ts";
+import { createCitationSplitter, sourcesFromCitations } from "./cite.ts";
+import { createRetrievalQuery, encodeSse, isFollowUpQuestion, parseAskRequest } from "./protocol.ts";
 import { findChunksByQuery } from "./retrieve.ts";
 import type { AskBindings, ChatAdapter, EmbeddingAdapter, KnowledgeBundle, QuotaDatabase, ServiceConfig } from "./types.ts";
 
@@ -48,18 +50,11 @@ export function listAllowedOrigins(env: AskBindings): string[] {
 
 export function readServiceConfig(env: AskBindings, prefix: "EMBEDDING" | "CHAT"): ServiceConfig | null {
   const apiKey = env[`${prefix}_API_KEY`]?.trim() ?? "";
-  const baseURL = env[`${prefix}_BASE_URL`]?.trim() ?? "";
   const model = env[`${prefix}_MODEL`]?.trim() ?? "";
+  const baseURL = publicEmbeddingBaseURL(env[`${prefix}_BASE_URL`] ?? "");
   if (!apiKey || !baseURL || !model) return null;
-  let url: URL;
-  try {
-    url = new URL(baseURL);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== "https:" && url.protocol !== "http:") return null;
-  const config: ServiceConfig = { apiKey, baseURL: baseURL.replace(/\/$/, ""), model };
-  if (prefix === "EMBEDDING" && env.EMBEDDING_DIMENSIONS?.trim()) {
+  const config: ServiceConfig = { apiKey, baseURL, model };
+  if (prefix === "EMBEDDING") {
     const dimensions = Number(env.EMBEDDING_DIMENSIONS);
     if (!Number.isInteger(dimensions) || dimensions <= 0) return null;
     config.dimensions = dimensions;
@@ -175,14 +170,7 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
   if (!embedding || !chat) return finish(json(503, { error: "unavailable", message: MSG.unavailable }, cors), "unavailable");
   const embeddingAdapter = embedding;
   const chatAdapter = chat;
-  if (
-    embedding.provider !== readyBundle.manifest.embedding.provider ||
-    embedding.model !== readyBundle.manifest.embedding.model ||
-    (embedding.dimensions !== 0 && embedding.dimensions !== readyBundle.manifest.embedding.dimensions)
-  ) {
-    return finish(json(503, { error: "unavailable", message: MSG.unavailable }, cors), "unavailable");
-  }
-  if (embeddingConfig?.dimensions && embeddingConfig.dimensions !== readyBundle.manifest.embedding.dimensions) {
+  if (embeddingSpaceError(embeddingAdapter, readyBundle.manifest.embedding, embeddingConfig)) {
     return finish(json(503, { error: "unavailable", message: MSG.unavailable }, cors), "unavailable");
   }
 
@@ -227,7 +215,6 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
     const ids = parsed.history.flatMap((message) => message.sourceIds ?? []).slice(-PRIOR_SOURCE_LIMIT);
     evidence = listChunksByIds(readyBundle.chunks, ids).slice(0, PRIOR_SOURCE_LIMIT).map((chunk) => ({ ...chunk, score: 1 }));
   }
-  const sources = createSourceList(evidence);
   const messages = evidence.length > 0
     ? createPrompt({
       question: parsed.question,
@@ -254,17 +241,24 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
           return;
         }
         let produced = "";
+        const citations = createCitationSplitter();
+        const emit = (part: string) => {
+          const text = part.slice(0, MAX_OUTPUT_CHARS - produced.length);
+          if (!text) return false;
+          produced += text;
+          send("token", { text });
+          return produced.length < MAX_OUTPUT_CHARS;
+        };
         for await (const part of chatAdapter.createChatStream(messages, signal)) {
           if (request.signal.aborted) return;
           if (!part) continue;
-          const text = part.slice(0, MAX_OUTPUT_CHARS - produced.length);
-          if (!text) break;
-          produced += text;
-          send("token", { text });
-          if (produced.length >= MAX_OUTPUT_CHARS) break;
+          const visible = citations.push(part);
+          if (visible && !emit(visible)) break;
         }
         if (request.signal.aborted) return;
-        send("sources", { sources });
+        const cited = citations.finish();
+        if (cited.text) emit(cited.text);
+        send("sources", { sources: sourcesFromCitations(evidence, cited.citedIds) });
         send("done", {});
       } catch (error) {
         if (request.signal.aborted || closed) return;

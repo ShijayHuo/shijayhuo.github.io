@@ -11,7 +11,26 @@ export const MAX_OUTPUT_TOKENS = 800;
 export const MAX_OUTPUT_CHARS = 4000;
 export const TOP_K = 5;
 export const PRIOR_SOURCE_LIMIT = 5;
+/** 起步门限，不是已校准的有效阈值。无关探针 0.308 已高于它。 */
 export const DEFAULT_MIN_SCORE = 0.25;
+export const MIN_SCORE_CALIBRATED = false;
+export const EMBEDDING_SCORE_PROBE = {
+  unrelated: 0.308,
+  related: [0.427, 0.391],
+} as const;
+export const EMBEDDING_MAX_BATCH_ITEMS = 10;
+export const EMBEDDING_MAX_ITEM_TOKENS = 8192;
+export const EMBEDDING_MAX_BATCH_TOKENS = 33000;
+export const EMBEDDING_MAX_ATTEMPTS = 3;
+export const VALIDATION_EMBEDDING_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+export const VALIDATION_EMBEDDING_MODEL = "qwen3.7-text-embedding-flash";
+export const VALIDATION_EMBEDDING_DIMENSIONS = 1024;
+export const VALIDATION_CHAT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+export const VALIDATION_CHAT_MODEL = "deepseek-v4.1-flash";
+/** 短句探测已收到 content、stop 和 [DONE]。不是博客问答验收。 */
+export const CHAT_PROBE_STATUS = "stream-ok";
+export const HASH_EMBEDDING_DIMENSIONS = 512;
+export const VALIDATION_API_PORT = 8787;
 export const TIMEOUT_MS = 25000;
 export const DEFAULT_ORIGIN = "https://shijayhuo.github.io";
 export const CHUNKER_VERSION = "sections-v1";
