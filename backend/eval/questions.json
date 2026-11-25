@@ -11,6 +11,21 @@
     "related": [0.427, 0.391],
     "note": "四句探针，不是博客全量。无关句已经高于 0.25。不能把 0.25 当成有效阈值，也不能为了通过再调低。"
   },
+  "smoke": {
+    "documents": 102,
+    "chunks": 669,
+    "positiveTop1": 6,
+    "positiveCount": 6,
+    "positiveMin": 0.5836,
+    "positiveMax": 0.7509,
+    "negatives": [
+      { "id": "unknown-tax", "topUrl": "/about/", "topScore": 0.4486 },
+      { "id": "unpublished-career", "topUrl": "/about/", "topScore": 0.4507 }
+    ],
+    "recallAccepted": false,
+    "thresholdValidated": false,
+    "note": "全库冒烟只说明 0.25 会放进负例。不能用这 8 题拟合门限。见 eval/calibration.md。"
+  },
   "questions": [
     {
       "id": "cordis-forms",

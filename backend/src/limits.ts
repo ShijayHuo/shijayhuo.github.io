@@ -27,7 +27,8 @@ export const VALIDATION_EMBEDDING_MODEL = "qwen3.7-text-embedding-flash";
 export const VALIDATION_EMBEDDING_DIMENSIONS = 1024;
 export const VALIDATION_CHAT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 export const VALIDATION_CHAT_MODEL = "deepseek-v4.1-flash";
-export const CHAT_PROBE_STATUS = "unconfirmed";
+/** 短句探测已收到 content、stop 和 [DONE]。不是博客问答验收。 */
+export const CHAT_PROBE_STATUS = "stream-ok";
 export const HASH_EMBEDDING_DIMENSIONS = 512;
 export const VALIDATION_API_PORT = 8787;
 export const TIMEOUT_MS = 25000;

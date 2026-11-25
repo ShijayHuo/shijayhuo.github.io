@@ -1,3 +1,4 @@
+import { describeSmokeSeparation } from "./abstain.ts";
 import { DEFAULT_MIN_SCORE, EMBEDDING_SCORE_PROBE, MIN_SCORE_CALIBRATED } from "./limits.ts";
 
 export interface RecallCaseResult {
@@ -21,6 +22,16 @@ export interface RecallReport {
   results: RecallCaseResult[];
 }
 
+function recallReason(): string {
+  const smoke = describeSmokeSeparation();
+  return [
+    "阈值未校准。四句探针里无关余弦 0.308，已经高于 0.25。",
+    `全库冒烟正例 Top1 分数 ${smoke.positiveMin} 到 ${smoke.positiveMax}，`,
+    `无依据负例最高 ${smoke.negativeMax}，落在 /about/。`,
+    "0.25 会把这些负例送进生成。间隙不是已验证阈值，本次不宣布召回通过，也不改门限。",
+  ].join("");
+}
+
 export function createRecallReport(input: {
   model: string;
   dimensions: number;
@@ -30,7 +41,7 @@ export function createRecallReport(input: {
     recallAccepted: false,
     thresholdValidated: MIN_SCORE_CALIBRATED,
     minScore: DEFAULT_MIN_SCORE,
-    reason: "阈值未用真实博客的召回和无依据负例校准。四句探针里无关余弦 0.308，已经高于 0.25。本次只记录分数，不宣布召回通过，也不调低阈值。",
+    reason: recallReason(),
     probe: EMBEDDING_SCORE_PROBE,
     model: input.model,
     dimensions: input.dimensions,

@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit",
     "build:knowledge": "node --experimental-strip-types scripts/build-knowledge.ts",
     "serve:validation": "node --experimental-strip-types scripts/serve-validation.ts",
+    "serve:site": "node --experimental-strip-types scripts/serve-site.ts",
+    "switch:local": "node --experimental-strip-types scripts/switch-local.ts",
     "eval:recall": "node --experimental-strip-types scripts/eval-recall.ts",
     "build:worker": "esbuild src/index.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/worker.js --metafile=dist/meta.json",
     "size": "node --experimental-strip-types scripts/report-size.ts"

@@ -55,9 +55,9 @@ node --experimental-strip-types scripts/build-knowledge.ts --validation \
 
 构建和查询必须是同一套地址、模型、维度和版本。哈希索引、v4 索引和 flash 索引不能混用。缓存键包含这些字段，写在已忽略的 `backend/.cache/embeddings.json`。可重试的是 408、429 和 5xx，最多 3 次；400 和取消不重试。成功的一批才会写入缓存。
 
-对话验证模型是 `deepseek-v4.1-flash`，同一北京 base URL。账号流式探测尚未确认，不能写成已通过。请求只带 `model`、`messages`、`max_tokens`、`stream`，不开启 `enable_thinking` 或 `reasoning_effort`。响应里的 `reasoning_content` 会被丢弃，不进入 `token`，也不拼进最终正文。生成流不做重试，避免把已经发出的增量再拼一遍。
+对话验证模型是 `deepseek-v4.1-flash`，同一北京 base URL。短句探测已经是 HTTP 200：模型名一致，正文是「你好」，结束为 stop 和 `[DONE]`，`reasoning_content` 单独出现并被丢弃，共 81 tokens。这只说明流式字段可用，不是博客问答验收。请求只带 `model`、`messages`、`max_tokens`、`stream`，不开启 `enable_thinking` 或 `reasoning_effort`。响应里的 `reasoning_content` 会被丢弃，不进入 `token`，也不拼进最终正文。生成流不做重试，避免把已经发出的增量再拼一遍。
 
-`0.25` 仍是代码里的起步门限，不是已校准阈值。四句探针里无关余弦约 0.308，相关约 0.427 和 0.391。无关句已经高于 0.25。全量博客评测要另做召回和无依据负例，不能为了通过把阈值调低。`scripts/eval-recall.ts` 拒绝 `--min-score`，报告里的 `recallAccepted` 固定为 false。
+`0.25` 仍是代码里的起步门限，不是已校准阈值。四句探针里无关余弦约 0.308，相关约 0.427 和 0.391。全库冒烟是 102 篇、669 片：6 个正例 Top1 分数 0.5836 到 0.7509；无税号负例 `/about/` 0.4486，未公开履历负例 `/about/` 0.4507。0.25 会把这两个负例送进生成。不能用这 8 题选一个中间值然后宣称通过。评测规则在 `backend/eval/calibration.md`。`scripts/eval-recall.ts` 拒绝 `--min-score`，报告里的 `recallAccepted` 固定为 false。
 
 box 的映射、端口、pid 和额度文件见 `backend/BOX.md`。
 
@@ -113,7 +113,7 @@ npx wrangler d1 migrations apply ajie-ask-quota --remote
 
 ## 还没有验收的部分
 
-- 没有在这台机器上调用百炼。`qwen3.7-text-embedding-flash` 和 `deepseek-v4.1-flash` 的真实小请求要由 box 执行。对话流式探测未确认前不能写成已通过。
-- `0.25` 不是有效阈值。全量博客的召回和无依据负例还没校准。
+- 没有在这台机器上调用百炼。全库 flash 索引和 deepseek 短句探测是 box 上已经做成的事。短句探测通过不等于博客问答验收。
+- `0.25` 不是有效阈值。全库 8 题冒烟说明它会放进无依据负例，但门限还没按 `backend/eval/calibration.md` 校准。
 - 没有创建 D1，没有部署 Worker。
 - Worker 的 CPU 和内存只在 Cloudflare 上才测得到。`npm test` 会打印脚本字节数、gzip 字节数，以及 mock 知识包的切片数和 JSON 体积。那不是 1024 维真实向量的体积。

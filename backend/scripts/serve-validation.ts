@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { mkdirSync, readFileSync, unlinkSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, unlinkSync } from "node:fs";
 import path from "node:path";
 import { createAnswer } from "../src/handler.ts";
 import { publicEmbeddingBaseURL, validationChatError, validationProfileError } from "../src/embedding-space.ts";
@@ -14,7 +14,8 @@ import {
   stopValidationProcess,
   writePidFile,
 } from "../src/validation-runtime.ts";
-import { createFileQuotaDatabase } from "../test/sqlite-quota.ts";
+import { LOCAL_API_PORT, listListeners } from "../src/local-switch.ts";
+import { createFileQuotaDatabase, snapshotQuota } from "../test/sqlite-quota.ts";
 import type { AskBindings, KnowledgeBundle } from "../src/types.ts";
 
 const backendRoot = path.join(import.meta.dirname, "..");
@@ -93,8 +94,27 @@ const startError = decideValidationStart({
   pidAlive: isPidAlive(readPid(pidFile) ?? 0),
 });
 if (startError) fail(startError);
+if (port !== LOCAL_API_PORT) fail("验证接口只监听 127.0.0.1:8787。");
+let listeners: ReturnType<typeof listListeners>;
+try {
+  listeners = listListeners();
+} catch (error) {
+  fail(error instanceof Error ? `${error.message} 额度文件尚未打开。` : "无法确认 8787 是否空闲。额度文件尚未打开。");
+}
+if (listeners.some((item) => item.port === port)) {
+  fail("8787 仍被占用。不要只杀 workerd，先停掉 serve-integrated 父进程。额度文件尚未打开。");
+}
+if (!existsSync(quotaFile)) fail("额度文件不存在。没有新建空库，避免和已有额度分叉。");
+const expectText = process.env.ASK_QUOTA_EXPECT_USED;
+const expectUsed = expectText === undefined ? undefined : Number(expectText);
+if (expectText !== undefined && !Number.isInteger(expectUsed)) fail("ASK_QUOTA_EXPECT_USED 不是整数。额度文件尚未当作写入打开。");
+let quotaSnapshot: ReturnType<typeof snapshotQuota>;
+try {
+  quotaSnapshot = snapshotQuota(quotaFile, expectUsed);
+} catch (error) {
+  fail(error instanceof Error ? error.message : "额度校验失败。");
+}
 
-mkdirSync(path.dirname(quotaFile), { recursive: true });
 mkdirSync(path.dirname(pidFile), { recursive: true });
 const database = createFileQuotaDatabase(quotaFile);
 const env: AskBindings = {
@@ -154,6 +174,10 @@ server.listen(port, "127.0.0.1", () => {
     pid: process.pid,
     pidFile,
     quotaFile,
+    quotaBackup: quotaSnapshot.backup,
+    quotaRows: quotaSnapshot.summary.rows,
+    quotaUsedMax: quotaSnapshot.summary.usedMax,
+    quotaRemainingAtMax: 20 - quotaSnapshot.summary.usedMax,
     quotaReset: false,
     embedding: {
       baseURL: normalizedEmbeddingBase,
@@ -165,7 +189,7 @@ server.listen(port, "127.0.0.1", () => {
       ? { mode: "mock", probe: "not-run" }
       : { mode: "real", baseURL: normalizedChatBase, model: chatModel, key: "present", probe: CHAT_PROBE_STATUS },
     thresholdCalibrated: false,
-    note: "检索使用真实向量。0.25 不是已校准阈值。对话探测未确认前不能写成已通过。这不是生产部署。",
+    note: "检索使用真实向量。0.25 不是已校准阈值，全库冒烟里 0.45 的无依据负例仍会被送进生成。对话短句探测已收到 content、stop 和 [DONE]，这不是博客问答验收。这不是生产部署。",
   }));
 });
 

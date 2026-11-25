@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { FIND_QUOTA_SQL, INSERT_QUOTA_SQL, createQuotaKey, readTrustedIp, updateQuotaByKey } from "../src/quota.ts";
-import { createFileQuotaDatabase, createSqliteQuotaDatabase } from "./sqlite-quota.ts";
+import { createFileQuotaDatabase, createSqliteQuotaDatabase, readQuotaSummary, snapshotQuota } from "./sqlite-quota.ts";
 
 test("额度 SQL 在第二十一次不再增加", async () => {
   assert.match(INSERT_QUOTA_SQL, /ON CONFLICT\(key\) DO UPDATE/);
@@ -59,4 +59,11 @@ test("文件额度库重启后保留次数，迁移语句不清零", async () =>
   const second = createFileQuotaDatabase(file);
   const row = await second.prepare("SELECT used FROM quota WHERE key = ?1").bind("same-key").first<{ used: number }>();
   assert.equal(row?.used, 7);
+  const snap = snapshotQuota(file, 7, "keep");
+  assert.equal(readQuotaSummary(snap.backup).usedMax, 7);
+  createFileQuotaDatabase(file);
+  assert.equal(readQuotaSummary(file).usedMax, 7);
+  assert.equal(readQuotaSummary(file).usedSum, 7);
+  assert.throws(() => snapshotQuota(file, 8, "mismatch"), /不符/);
+  assert.equal(readQuotaSummary(file).usedMax, 7);
 });
