@@ -259,35 +259,34 @@
 }
 
 .ask-hero {
-  margin: 0.25rem 0 0;
-  padding: 1.35rem 1.25rem 1.05rem;
-  border-radius: 0.75rem;
-  background: var(--card-bg);
-  box-shadow: var(--card-shadow);
-  text-align: center;
+  margin: 0.15rem 0 0;
+  padding: 0.15rem 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
 }
 
 .ask-hero + #post-list {
-  margin-top: 1.35rem;
-}
-
-.ask-kicker {
-  margin: 0;
-  color: var(--text-muted-color);
-  font-size: 0.78rem;
-  letter-spacing: 0.12em;
+  margin-top: 0.85rem;
 }
 
 .ask-hero h2,
-.ask-chat h1 {
-  margin: 0.35rem 0 0.45rem;
+h1.dynamic-title:has(+ .content #ask-app) {
+  margin: 0;
   color: var(--heading-color);
-  font-weight: 700;
+  font-weight: 650;
   line-height: 1.35;
 }
 
 .ask-hero h2 {
-  font-size: 1.55rem;
+  font-size: 1.45rem;
+}
+
+h1.dynamic-title:has(+ .content #ask-app) {
+  margin-bottom: 0.35rem;
+  font-size: 1.35rem;
 }
 
 .ask-hero .anchor {
@@ -306,16 +305,16 @@
 }
 
 .ask-lead {
-  max-width: 38rem;
-  margin: 0 auto;
+  max-width: 40rem;
+  margin: 0.45rem 0 0;
   font-size: 0.95rem;
   line-height: 1.65;
 }
 
 .ask-form {
   width: 100%;
-  max-width: 44rem;
-  margin: 0.95rem auto 0;
+  max-width: none;
+  margin: 1.05rem 0 0;
   text-align: left;
 }
 
@@ -395,8 +394,9 @@
   color: var(--main-bg);
 }
 
-.ask-send[aria-disabled='true'] {
-  opacity: 0.45;
+.ask-send[aria-disabled='true'],
+.ask-send[aria-busy='true'] {
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -408,28 +408,54 @@
 
 .ask-keyhint,
 .ask-disclaimer,
-.ask-bubble-note {
-  margin: 0.55rem 0 0;
+.ask-meta {
+  margin: 0;
   font-size: 0.8rem;
   line-height: 1.5;
+}
+
+.ask-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin-top: 0.7rem;
+}
+
+.ask-list-title {
+  margin: 2.35rem 0 0;
+  color: var(--heading-color);
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.ask-suggestions[hidden],
+.ask-empty[hidden],
+.ask-pending[hidden],
+.ask-stopped[hidden],
+.ask-sources[hidden],
+#ask-stop[hidden] {
+  display: none !important;
 }
 
 .ask-suggestions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.45rem;
-  margin-top: 0.85rem;
+  justify-content: flex-start;
+  gap: 0.35rem 0.95rem;
+  margin-top: 0.8rem;
 }
 
 .ask-suggestions button {
-  border: 1px solid var(--btn-border-color);
-  border-radius: 999px;
-  background: var(--main-bg);
-  color: var(--text-color);
-  padding: 0.32rem 0.75rem;
-  font-size: 0.86rem;
-  line-height: 1.4;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--link-color);
+  padding: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
   cursor: pointer;
 }
 
@@ -439,8 +465,11 @@
 .ask-back:focus-visible,
 .ask-stop:hover,
 .ask-stop:focus-visible {
-  border-color: var(--link-color);
-  color: var(--link-color);
+  color: var(--link-hover-color, var(--link-color));
+}
+
+.ask-suggestions button[aria-busy='true'] {
+  color: var(--text-muted-color);
 }
 
 .ask-suggestions button:disabled {
@@ -452,20 +481,24 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: calc(100vh - 8rem);
-  padding-bottom: 0.5rem;
+  min-height: calc(100vh - 7.5rem);
+  padding-bottom: 0.25rem;
+}
+
+html:has(#ask-app) {
+  scroll-padding-bottom: 8rem;
 }
 
 .content:has(#ask-app) {
-  margin-top: 0.75rem;
+  margin-top: 0.35rem;
 }
 
 .ask-chat-top {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.35rem;
-  margin-bottom: 0.85rem;
+  gap: 0.2rem;
+  margin-bottom: 1.35rem;
 }
 
 .ask-back {
@@ -476,13 +509,8 @@
   text-decoration: none;
 }
 
-.ask-chat h1 {
-  margin: 0;
-  font-size: 1.45rem;
-}
-
 .ask-chat .ask-disclaimer {
-  margin-top: 0.2rem;
+  margin-top: 0.15rem;
 }
 
 .ask-empty {
@@ -493,42 +521,52 @@
 .ask-messages {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
-  margin-top: 0.8rem;
+  gap: 1.35rem;
+  width: 100%;
+  max-width: 42rem;
+  margin-top: 0.2rem;
+  padding-bottom: 0.75rem;
+}
+
+.ask-messages:focus {
+  outline: none;
 }
 
 .ask-msg {
   display: flex;
   flex-direction: column;
-  scroll-margin-bottom: 7rem;
+  align-items: flex-start;
+  max-width: 42rem;
+  scroll-margin-bottom: 8.5rem;
 }
 
-.ask-msg-user {
-  align-items: flex-end;
+.ask-msg-user:not(:first-child) {
+  margin-top: 0.65rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid color-mix(in srgb, var(--text-muted-color) 28%, transparent);
 }
 
 .ask-msg-label {
   margin: 0 0 0.3rem;
   color: var(--text-muted-color);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
 }
 
 .ask-bubble {
-  max-width: min(42rem, 100%);
-  padding: 0.8rem 0.95rem;
-  line-height: 1.7;
+  width: 100%;
+  max-width: 42rem;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  line-height: 1.75;
 }
 
-.ask-msg-user .ask-bubble {
-  background: var(--heading-color);
-  color: var(--main-bg);
-  border-radius: 1rem 1rem 0.35rem 1rem;
-}
-
-.ask-msg-assistant .ask-bubble {
-  background: var(--card-bg);
-  box-shadow: var(--card-shadow);
-  border-radius: 1rem 1rem 1rem 0.35rem;
+.ask-msg-user .ask-bubble-text {
+  color: var(--heading-color);
+  font-size: 1.2rem;
+  font-weight: 650;
+  line-height: 1.5;
 }
 
 .ask-bubble-text {
@@ -556,32 +594,28 @@
   color: var(--link-color);
 }
 
-.ask-msg-user .ask-bubble-text {
-  color: inherit;
-}
-
 .ask-composer {
   position: sticky;
   bottom: 0;
   z-index: 4;
   width: 100%;
-  margin-top: 0.8rem;
-  padding-top: 0.75rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--text-muted-color) 24%, transparent);
   background: var(--main-bg);
 }
 
 .ask-chat .ask-suggestions {
-  justify-content: flex-start;
-  margin-top: 0.9rem;
+  margin-top: 0.15rem;
+}
+
+.ask-chat .ask-empty + .ask-suggestions {
+  margin-top: 0.75rem;
 }
 
 @media (max-width: 767.98px) {
-  .ask-hero {
-    padding: 1rem 0.8rem 0.85rem;
-  }
-
   .ask-hero h2,
-  .ask-chat h1 {
+  h1.dynamic-title:has(+ .content #ask-app) {
     font-size: 1.28rem;
   }
 
@@ -602,10 +636,6 @@
 
   .ask-hint {
     padding-left: 0.35rem;
-  }
-
-  .ask-suggestions {
-    justify-content: flex-start;
   }
 
   .ask-composer {

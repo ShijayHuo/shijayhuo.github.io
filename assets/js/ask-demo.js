@@ -12,6 +12,8 @@
   var runtime = document.body.getAttribute("data-ask-runtime") || "site";
   var active = null;
   var sendGuard = false;
+  var followAnswer = true;
+  var scrollLock = 0;
 
   var INTENTS = [
     {
@@ -414,39 +416,50 @@
     return anchor;
   }
 
+  function fillSources(sources, message) {
+    var hasSources = message.sources && message.sources.length && !message.pending;
+    sources.hidden = !hasSources;
+    sources.replaceChildren();
+    if (!hasSources) return;
+    var caption = document.createElement("p");
+    caption.textContent = "已发布文章";
+    sources.appendChild(caption);
+    var list = document.createElement("ul");
+    message.sources.forEach(function (source) {
+      var item = document.createElement("li");
+      item.appendChild(linkElement(source));
+      list.appendChild(item);
+    });
+    sources.appendChild(list);
+  }
+
   function renderMessage(message) {
     var article = document.createElement("article");
     article.className = "ask-msg ask-msg-" + message.role;
     article.dataset.id = message.id;
-    if (message.role === "user") {
-      var userBubble = document.createElement("div");
-      userBubble.className = "ask-bubble";
-      var userText = document.createElement("div");
-      userText.className = "ask-bubble-text";
-      userText.textContent = message.text;
-      userBubble.appendChild(userText);
-      article.appendChild(userBubble);
-      return article;
-    }
 
-    var label = document.createElement("div");
+    var label = document.createElement("p");
     label.className = "ask-msg-label";
-    label.textContent = "演示回答";
+    label.textContent = message.role === "user" ? "提问" : "演示回答";
     article.appendChild(label);
 
     var bubble = document.createElement("div");
     bubble.className = "ask-bubble";
-
-    var pending = document.createElement("p");
-    pending.className = "ask-pending";
-    pending.textContent = "正在生成演示回答…";
-    pending.hidden = !(message.pending && !message.text);
-    bubble.appendChild(pending);
-
     var text = document.createElement("div");
     text.className = "ask-bubble-text";
     text.textContent = message.text || "";
     bubble.appendChild(text);
+
+    if (message.role === "user") {
+      article.appendChild(bubble);
+      return article;
+    }
+
+    var pending = document.createElement("p");
+    pending.className = "ask-pending";
+    pending.textContent = "正在生成演示回答";
+    pending.hidden = !(message.pending && !message.text);
+    bubble.insertBefore(pending, text);
 
     var stopped = document.createElement("p");
     stopped.className = "ask-stopped";
@@ -456,26 +469,8 @@
 
     var sources = document.createElement("div");
     sources.className = "ask-sources";
-    var hasSources = message.sources && message.sources.length && !message.pending;
-    sources.hidden = !hasSources;
-    if (hasSources) {
-      var caption = document.createElement("p");
-      caption.textContent = "已发布文章";
-      sources.appendChild(caption);
-      var list = document.createElement("ul");
-      message.sources.forEach(function (source) {
-        var item = document.createElement("li");
-        item.appendChild(linkElement(source));
-        list.appendChild(item);
-      });
-      sources.appendChild(list);
-    }
+    fillSources(sources, message);
     bubble.appendChild(sources);
-
-    var note = document.createElement("p");
-    note.className = "ask-bubble-note";
-    note.textContent = DISCLAIMER;
-    bubble.appendChild(note);
     article.appendChild(bubble);
     return article;
   }
@@ -490,8 +485,24 @@
       box.appendChild(renderMessage(message));
     });
     if (empty) empty.hidden = messages.length > 0;
+    var suggestions = document.querySelector("#ask-app .ask-suggestions");
+    if (suggestions) suggestions.hidden = messages.length > 0;
     var last = box.lastElementChild;
-    if (last && messages.length) last.scrollIntoView({ block: "nearest" });
+    if (last && messages.length && followAnswer) reveal(last);
+  }
+
+  function nearBottom() {
+    var doc = document.documentElement;
+    return doc.scrollHeight - (window.scrollY + window.innerHeight) < 180;
+  }
+
+  function reveal(node) {
+    if (!node) return;
+    scrollLock += 1;
+    node.scrollIntoView({ block: "nearest" });
+    window.requestAnimationFrame(function () {
+      scrollLock = Math.max(0, scrollLock - 1);
+    });
   }
 
   function paintAssistant(message) {
@@ -499,9 +510,13 @@
     if (!node) return false;
     var text = node.querySelector(".ask-bubble-text");
     var pending = node.querySelector(".ask-pending");
+    var stopped = node.querySelector(".ask-stopped");
+    var sources = node.querySelector(".ask-sources");
     if (text) text.textContent = message.text || "";
     if (pending) pending.hidden = !(message.pending && !message.text);
-    node.scrollIntoView({ block: "nearest" });
+    if (stopped) stopped.hidden = !message.stopped;
+    if (sources) fillSources(sources, message);
+    if (followAnswer) reveal(node);
     return true;
   }
 
@@ -577,8 +592,16 @@
       timer: 0
     };
     setGeneratingUI(true);
+    followAnswer = true;
     setStatus(index ? "继续生成演示回答" : "正在生成演示回答");
     renderSession(loadStore().sessions[sessionId]);
+    var questions = document.querySelectorAll("#ask-messages .ask-msg-user");
+    var question = questions[questions.length - 1];
+    var chatInput = document.getElementById("ask-chat-input");
+    if (question && document.activeElement !== chatInput) {
+      question.tabIndex = -1;
+      question.focus({ preventScroll: true });
+    }
     var step = full.length > 320 ? 4 : 2;
     active.timer = window.setInterval(function () {
       if (!active || active.assistantId !== existing.id) return;
@@ -606,7 +629,7 @@
         active = null;
         setGeneratingUI(false);
         setStatus("演示回答已完成");
-        renderSession(liveSession);
+        if (!paintAssistant(live)) renderSession(liveSession);
         return;
       }
       saveStore(current);
@@ -675,6 +698,7 @@
       var input = document.getElementById("ask-input");
       if (input) input.value = "";
       showHint("home", "");
+      resetHomeSend();
       window.scrollTo(0, 0);
       return;
     }
@@ -682,7 +706,27 @@
     syncChat();
   }
 
-  function sendHome(text) {
+  function resetHomeSend() {
+    var button = document.getElementById("ask-send");
+    if (button) {
+      button.textContent = "发送";
+      button.removeAttribute("aria-busy");
+    }
+    document.querySelectorAll("#ask-hero [data-ask-suggest]").forEach(function (item) {
+      item.removeAttribute("aria-busy");
+    });
+  }
+
+  function markHomeSending(control) {
+    var button = document.getElementById("ask-send");
+    if (button) {
+      button.setAttribute("aria-busy", "true");
+      button.textContent = "发送中";
+    }
+    if (control && control.setAttribute) control.setAttribute("aria-busy", "true");
+  }
+
+  function sendHome(text, control) {
     if (sendGuard) return;
     var value = String(text || "").trim();
     if (!value) {
@@ -692,6 +736,7 @@
       return;
     }
     sendGuard = true;
+    markHomeSending(control);
     haltActive(true);
     var id = createSession(value);
     var input = document.getElementById("ask-input");
@@ -794,7 +839,7 @@
       if (!button) return;
       var text = button.getAttribute("data-ask-suggest") || "";
       if (button.closest("#ask-app")) sendChat(text);
-      else sendHome(text);
+      else sendHome(text, button);
     });
     var back = document.getElementById("ask-back");
     if (back && runtime === "file") {
@@ -828,6 +873,11 @@
     if (document.getElementById("ask-app")) syncChat();
   }
 
+  window.addEventListener("scroll", function () {
+    if (scrollLock) return;
+    followAnswer = nearBottom();
+  }, { passive: true });
+
   window.addEventListener("pageshow", function (event) {
     if (event.persisted) {
       stopTimer();
@@ -837,7 +887,9 @@
     if (homeInput && sessionStorage.getItem(CLEAR_HOME_KEY) === "1") {
       homeInput.value = "";
       sessionStorage.removeItem(CLEAR_HOME_KEY);
+      resetHomeSend();
     }
+    if (homeInput) resetHomeSend();
     if (runtime === "site" && document.getElementById("ask-app")) syncChat();
   });
 

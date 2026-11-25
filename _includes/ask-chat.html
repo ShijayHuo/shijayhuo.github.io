@@ -1,11 +1,12 @@
 <div id="ask-app" class="ask-chat">
   <div class="ask-chat-top">
     <a id="ask-back" class="ask-back" href="{{ '/' | relative_url }}">← 返回博客</a>
+    <p class="ask-disclaimer">交互原型，回答为演示内容，未接入真实问答</p>
   </div>
-
-  <p class="ask-disclaimer">交互原型，回答为演示内容，未接入真实问答</p>
   <p id="ask-status" class="ask-sr" role="status"></p>
 
+  <div id="ask-messages" class="ask-messages" aria-label="对话记录" tabindex="-1"></div>
+  <p id="ask-empty" class="ask-empty">从首页发送的问题会带到这里，并开始一段演示回答。</p>
   <div class="ask-suggestions" aria-label="建议问题">
     <button type="button" data-ask-suggest="你是谁？">你是谁？</button>
     <button type="button" data-ask-suggest="这个时代需要什么样的开发者？">这个时代需要什么样的开发者？</button>
@@ -13,9 +14,6 @@
     <button type="button" data-ask-suggest="怎么看架构师？">怎么看架构师？</button>
     <button type="button" data-ask-suggest="西蒙学习法和一万小时定律">西蒙学习法和一万小时定律</button>
   </div>
-
-  <div id="ask-messages" class="ask-messages" aria-label="对话记录"></div>
-  <p id="ask-empty" class="ask-empty">从首页发送的问题会带到这里，并开始一段演示回答。你也可以在下面直接输入。</p>
 
   <form id="ask-chat-form" class="ask-form ask-composer" method="post" action="{{ '/ask/' | relative_url }}">
     <div class="ask-field">
