@@ -25,7 +25,9 @@ description: >- # used by seo meta and the atom feed
 # E.g. 'https://username.github.io', note that it does not end with a '/'.
 url: "https://shijayhuo.github.io"
 
-# 问答开关。协议见 docs/ask/contract.md。页面尚未读取这两项，当前仍是预写演示。
+# 问答开关。页面读取这两项，协议见 docs/ask/contract.md。
+# 生产保持演示关闭且地址为空：不发请求，也不用预写回答顶上。
+# 接入自有问答 API 时，把 api_url 写成 http(s) 绝对地址。demo 为 true 时忽略地址。
 ask:
   demo: false
   api_url: ""

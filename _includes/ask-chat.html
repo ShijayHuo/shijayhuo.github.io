@@ -1,5 +1,12 @@
 <div id="ask-app" class="ask-chat" data-ask-state="empty">
   <p id="ask-status" class="ask-sr" role="status"></p>
+  <div id="ask-mock-note" class="ask-mock-note" hidden>
+    <span>模拟传输</span>
+    <label class="ask-mock-label">场景
+      <select id="ask-mock-scenario" aria-label="模拟场景"></select>
+    </label>
+    <span>回放契约样例，不是线上问答。显示的次数不是访问限额。</span>
+  </div>
 
   <div id="ask-empty" class="ask-empty">
     <h2 class="ask-greet" id="ask-greet">下午好</h2>
@@ -26,7 +33,9 @@
     <div id="ask-messages" class="ask-messages" aria-label="对话" tabindex="-1"></div>
   </div>
 
-  <form id="ask-chat-form" class="ask-form ask-composer" method="post" action="{{ '/ask/' | relative_url }}" hidden>
+  <div class="ask-footer">
+    <p id="ask-remaining" class="ask-remaining" hidden></p>
+    <form id="ask-chat-form" class="ask-form ask-composer" method="post" action="{{ '/ask/' | relative_url }}" hidden>
     <div class="ask-field">
       <label class="ask-sr" for="ask-chat-input">消息</label>
       <textarea
@@ -44,7 +53,10 @@
         </div>
       </div>
     </div>
-  </form>
+      </form>
+  </div>
 </div>
 
+<script src="{{ '/assets/js/ask-sse.js' | relative_url }}"></script>
+<script src="{{ '/assets/js/ask-fixtures.js' | relative_url }}"></script>
 <script src="{{ '/assets/js/ask-demo.js' | relative_url }}"></script>

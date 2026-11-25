@@ -396,7 +396,10 @@
 .ask-composer[hidden],
 .ask-pending[hidden],
 .ask-stopped[hidden],
+.ask-error[hidden],
 .ask-sources[hidden],
+.ask-mock-note[hidden],
+.ask-remaining[hidden],
 #ask-stop[hidden] {
   display: none !important;
 }
@@ -507,10 +510,50 @@ html:has(#ask-app) {
 }
 
 .ask-pending,
-.ask-stopped {
+.ask-stopped,
+.ask-error {
   margin: 0.35rem 0 0;
   color: var(--text-muted-color);
   font-size: 0.84rem;
+}
+
+.ask-mock-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  width: min(42rem, 100%);
+  margin: 0 auto 0.75rem;
+  color: var(--text-muted-color);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.ask-mock-note select {
+  margin-left: 0.3rem;
+  border: 1px solid var(--btn-border-color);
+  border-radius: 0.35rem;
+  background: var(--main-bg);
+  color: var(--text-color);
+  font: inherit;
+}
+
+.ask-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  width: min(42rem, 100%);
+  margin: auto auto 0;
+  background: var(--main-bg);
+}
+
+.ask-remaining {
+  margin: 0 0 0.35rem;
+  color: var(--text-muted-color);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .ask-sources {
@@ -527,12 +570,10 @@ html:has(#ask-app) {
 }
 
 .ask-composer {
-  position: sticky;
-  bottom: 0;
-  z-index: 4;
-  width: min(42rem, 100%);
-  margin: auto auto 0;
-  padding-top: 0.75rem;
+  position: static;
+  width: 100%;
+  margin: 0;
+  padding-top: 0.35rem;
   padding-bottom: calc(0.45rem + env(safe-area-inset-bottom));
   background: var(--main-bg);
 }
