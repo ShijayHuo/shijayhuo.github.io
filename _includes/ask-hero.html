@@ -1,0 +1,35 @@
+<section id="ask-hero" class="ask-hero" data-ask-url="{{ '/ask/' | relative_url }}" aria-labelledby="ask-hero-title">
+  <p class="ask-kicker">演示对话</p>
+  <h2 class="ask-title"><span id="ask-hero-title">想从这些文章里了解什么？</span></h2>
+  <p class="ask-lead">写在这里，发送后进入单独的对话页。下面仍是原来的文章列表。</p>
+
+  <form id="ask-hero-form" class="ask-form" method="post" action="{{ '/ask/' | relative_url }}">
+    <div class="ask-field">
+      <label class="ask-sr" for="ask-input">问题</label>
+      <textarea
+        id="ask-input"
+        rows="3"
+        placeholder="例如：你是谁？这个时代需要什么样的开发者？"
+        autocomplete="off"
+        enterkeyhint="send"
+      ></textarea>
+      <div class="ask-field-bar">
+        <p id="ask-hero-hint" class="ask-hint" role="status"></p>
+        <button id="ask-send" class="ask-send" type="submit">发送</button>
+      </div>
+    </div>
+  </form>
+
+  <p class="ask-keyhint">Enter 发送，Shift + Enter 换行</p>
+
+  <div class="ask-suggestions" aria-label="建议问题">
+    <button type="button" data-ask-suggest="你是谁？">你是谁？</button>
+    <button type="button" data-ask-suggest="这个时代需要什么样的开发者？">这个时代需要什么样的开发者？</button>
+    <button type="button" data-ask-suggest="软件的 AI 味儿是什么？">软件的 AI 味儿是什么？</button>
+    <button type="button" data-ask-suggest="怎么看架构师？">怎么看架构师？</button>
+  </div>
+
+  <p class="ask-disclaimer">交互原型，回答为演示内容，未接入真实问答</p>
+</section>
+
+<script src="{{ '/assets/js/ask-demo.js' | relative_url }}"></script>
