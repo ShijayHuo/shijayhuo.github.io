@@ -108,7 +108,45 @@ try {
     await page.goto(`${site}/`, { waitUntil: "domcontentloaded" });
   });
 
+  await check("文章标题命中公开原文并给出引用", async () => {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const cite = await context.newPage();
+    try {
+      await cite.goto(`${site}/`, { waitUntil: "domcontentloaded" });
+      await cite.evaluate(() => sessionStorage.clear());
+      const before = await control("/upstream");
+      await cite.locator("#ask-input").fill("函数式编程");
+      await cite.locator("#ask-input").press("Enter");
+      await cite.waitForURL(/\/ask\/?$/);
+      assert.equal(new URL(cite.url()).search, "");
+      await cite.waitForFunction(() => document.body.innerText.includes("本地测试生成，不是文章结论。"));
+      await waitSettled(cite);
+      const link = cite.locator("#ask-messages .ask-sources a");
+      assert.equal(await link.count(), 1);
+      assert.equal(await link.innerText(), "函数式编程");
+      assert.equal(await link.getAttribute("href"), "/posts/functional-programming/");
+      const after = await control("/upstream");
+      assert.equal(after.embeddings, before.embeddings + 1);
+      assert.equal(after.chats, before.chats + 1);
+      await shot(cite, "live-citation-desktop.png");
+    } finally {
+      await context.close();
+    }
+  });
+
+  await check("自然问句依据不足且不调用生成", async () => {
+    const before = await control("/upstream");
+    const response = await postAsk("阿杰有哪些技术经历？");
+    assert.equal(response.status, 200);
+    assert.match(response.text, /公开文章里没有足够依据回答这个问题。/);
+    assert.match(response.text, /"sources":\[\]/);
+    const after = await control("/upstream");
+    assert.equal(after.embeddings, before.embeddings + 1);
+    assert.equal(after.chats, before.chats);
+  });
+
   await check("首页发问得到真实 SSE 和来源", async () => {
+    const before = await control("/upstream");
     await page.locator("#ask-input").fill(probe.question);
     await page.locator("#ask-input").press("Enter");
     await page.waitForURL(/\/ask\/?$/);
@@ -122,8 +160,8 @@ try {
     assert.ok((await page.locator("#ask-remaining").innerText()).includes("还可问"));
     assert.equal(await page.locator("#ask-messages img, #ask-messages script").count(), 0);
     const stats = await control("/upstream");
-    assert.equal(stats.embeddings, 1);
-    assert.equal(stats.chats, 1);
+    assert.equal(stats.embeddings, before.embeddings + 1);
+    assert.equal(stats.chats, before.chats + 1);
     await shot(page, "live-chat-desktop.png");
   });
 

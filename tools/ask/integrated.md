@@ -45,6 +45,28 @@ ASK_CONTROL_PORT=8791 node --experimental-strip-types backend/scripts/reset-loca
 
 重新生成知识包：`node --experimental-strip-types backend/scripts/serve-integrated.ts --rebuild`。
 
+## 能打出引用的问法
+
+字符哈希只认摘录重合，不认意思。下面这些字符串和已发布原文的字符片段重合，本地最低分 0.55 下会命中，并返回「本地测试生成，不是文章结论。」加一条站内链接。问句要整句一致，不要加标点或空格。当前已经跑着的服务可以直接问，不用重启，也不用换知识包。
+
+| 问句 | 引用 |
+| --- | --- |
+| `函数式编程` | `/posts/functional-programming/` |
+| `Angular 单元测试入门` | `/posts/angular-unit-testing-introduction/` |
+| `使用nodejs实现redis的pub/sub` | `/posts/nodejs-redis-pubsub/` |
+| `西蒙学习法和一万小时定律` | `/posts/simon-learning-method-and-10000-hour-rule/` |
+| `encodeURI 和 encodeURIComponent` | `/posts/encodeuri-vs-encodeuricomponent/` |
+
+关于页要用正文开头的连续摘录，不能改写。`backend/dist/local/probe.json` 里的 `question` 会引用 `/about/`，链接文字是 `about`。
+
+`阿杰有哪些技术经历？`、`Stripe 接入指南`、`MongoDB 聚合管道限制` 会得到「公开文章里没有足够依据回答这个问题。」，并且没有引用。这是哈希没有重合，不是接口把来源弄丢了。`阿杰有哪些技术经历？` 的最高分大约 0.22，低于生产默认 0.25，最近的切片也不是经历文章。经历长文 `_posts/2026-07-29-career.md` 本身是 `published: false`，构建时就没有进知识包。
+
+`DeepSeek Harness 的底层基石——Cordis（一）` 会引用另一篇 Cordis 文章。那是哈希撞车，不要拿它验收引用是否指回原题。
+
+## 主题
+
+侧栏「首页」、站点标题和浏览器后退都会离开问答页。主题记在 `localStorage` 的 `theme`。实测切到深色后再走这三条，首页仍是 `data-bs-theme=dark`，背景 `rgb(27, 27, 30)`。这里没有改主题代码。
+
 ## 模拟边界
 
 - 向量是 512 维字符哈希，不是语义模型。本地最低分设为 `0.55`，只让摘录明显重合的切片显示成来源。随便问一句通常得到「公开文章里没有足够依据」。
