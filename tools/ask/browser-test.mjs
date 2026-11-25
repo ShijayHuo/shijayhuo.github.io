@@ -164,9 +164,33 @@ try {
   });
 
   await check("空输入、输入法和换行", async () => {
-    await page.locator("#ask-send").click();
+    const field = page.locator("#ask-hero .ask-field");
+    const radius = await field.evaluate((el) => {
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      return Math.abs(parseFloat(getComputedStyle(el).borderTopLeftRadius) - 0.9 * rem);
+    });
+    assert(radius < 0.6, "输入框圆角被改掉");
+    assert(await page.locator("#ask-input").evaluate((el) => getComputedStyle(el).resize) === "none", "还能拖拽高度");
+    assert(await page.locator("#ask-send").isDisabled(), "空内容仍能点发送");
+    const before = await page.locator("#ask-input").evaluate((el) => el.getBoundingClientRect().height);
+    await page.locator("#ask-input").press("Enter");
     assert((await page.locator("#ask-hero-hint").innerText()).includes("请输入内容后再发送"), "空白提示");
     assert(page.url().replace(/\/$/, "").endsWith("8765"), "空白发送离开了首页");
+    await page.locator("#ask-input").fill("一行\n两行\n三行\n四行\n五行\n六行");
+    const grown = await page.locator("#ask-input").evaluate((el) => el.getBoundingClientRect().height);
+    assert(grown > before + 20, "输入没有自动增高");
+    await page.locator("#ask-input").fill("一二三四五六七八".repeat(80));
+    const capped = await page.locator("#ask-input").evaluate((el) => ({
+      height: el.getBoundingClientRect().height,
+      overflow: getComputedStyle(el).overflowY,
+      scroll: el.scrollHeight > el.clientHeight + 1
+    }));
+    assert(capped.height <= 180, "超过上限还在撑高");
+    assert(capped.overflow === "auto" && capped.scroll, "上限后没有内部滚动");
+    await page.locator("#ask-input").fill("");
+    const restored = await page.locator("#ask-input").evaluate((el) => el.getBoundingClientRect().height);
+    assert(Math.abs(restored - before) < 4, "清空后没有回到原高度");
+    assert(await page.locator("#ask-send").isDisabled(), "清空后发送仍可用");
     await page.evaluate(() => {
       const el = document.getElementById("ask-input");
       el.focus();
@@ -348,6 +372,8 @@ try {
     await page.locator("#ask-empty-input").fill("慢一点");
     await page.locator("#ask-empty-send").click();
     await page.locator("#ask-stop").waitFor({ state: "visible" });
+    assert(await page.locator("#ask-chat-send").isDisabled(), "生成中还能发送");
+    assert((await page.locator("#ask-stop").getAttribute("aria-label")) === "停止", "停止没有可访问名称");
     await page.locator("#ask-stop").click();
     await page.locator(".ask-stopped").waitFor();
     const text = await page.locator(".ask-msg-assistant").innerText();

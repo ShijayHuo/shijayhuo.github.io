@@ -532,11 +532,55 @@ function selectedScenario() {
     return !view || !view.hidden;
   }
 
+  function fitComposer(textarea) {
+    if (!textarea) return;
+    var max = 168;
+    textarea.style.height = "auto";
+    var next = textarea.scrollHeight;
+    if (next > max) {
+      textarea.style.height = max + "px";
+      textarea.style.overflowY = "auto";
+      return;
+    }
+    textarea.style.height = next + "px";
+    textarea.style.overflowY = "hidden";
+  }
+
+  function syncSendButton(textarea) {
+    if (!textarea) return;
+    var form = textarea.closest("form");
+    var button = form ? form.querySelector(".ask-send") : null;
+    if (!button) return;
+    var stop = form.querySelector(".ask-stop");
+    var generating = Boolean(stop && !stop.hidden);
+    var busy = button.getAttribute("aria-busy") === "true";
+    var empty = textarea.value.trim().length === 0;
+    button.disabled = empty || generating || busy;
+    if (button.getAttribute("aria-busy") === "true") button.setAttribute("aria-label", "发送中");
+    else button.setAttribute("aria-label", "发送");
+    button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
+  }
+
+  function clearComposer(textarea) {
+    if (!textarea) return;
+    textarea.value = "";
+    fitComposer(textarea);
+    syncSendButton(textarea);
+  }
+
+  function refreshComposers() {
+    ["ask-input", "ask-empty-input", "ask-chat-input"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      fitComposer(el);
+      syncSendButton(el);
+    });
+  }
+
   function setGeneratingUI(on) {
     var stop = document.getElementById("ask-stop");
-    var send = document.getElementById("ask-chat-send");
     if (stop) stop.hidden = !on;
-    if (send) send.setAttribute("aria-disabled", on ? "true" : "false");
+    syncSendButton(document.getElementById("ask-chat-input"));
   }
 
   function linkElement(source) {
@@ -1156,8 +1200,7 @@ function selectedScenario() {
     markNav(name === "ask");
     if (name === "home") {
       if (active) stopActive("leave");
-      var input = document.getElementById("ask-input");
-      if (input) input.value = "";
+      clearComposer(document.getElementById("ask-input"));
       showHint("home", "");
       resetHomeSend();
       window.scrollTo(0, 0);
@@ -1170,17 +1213,17 @@ function selectedScenario() {
 
   function resetHomeSend() {
     var button = document.getElementById("ask-send");
-    if (button) {
-      button.textContent = "发送";
-      button.removeAttribute("aria-busy");
-    }
+    if (!button) return;
+    button.removeAttribute("aria-busy");
+    syncSendButton(document.getElementById("ask-input"));
   }
 
   function markHomeSending() {
     var button = document.getElementById("ask-send");
     if (!button) return;
     button.setAttribute("aria-busy", "true");
-    button.textContent = "发送中";
+    button.setAttribute("aria-label", "发送中");
+    button.disabled = true;
   }
 
   function sendHome(text) {
@@ -1196,8 +1239,7 @@ function selectedScenario() {
     markHomeSending();
     if (active) stopActive("user");
     var id = createSession(value);
-    var input = document.getElementById("ask-input");
-    if (input) input.value = "";
+    clearComposer(document.getElementById("ask-input"));
     showHint("home", "");
     if (runtime === "file") {
       history.pushState({ askView: "ask", askSessionId: id }, "", location.pathname);
@@ -1237,8 +1279,7 @@ function selectedScenario() {
       userMessage = appendUser(sessionId, value);
     }
     ["ask-chat-input", "ask-empty-input"].forEach(function (id) {
-      var field = document.getElementById(id);
-      if (field) field.value = "";
+      clearComposer(document.getElementById(id));
     });
     sendGuard = false;
     startGeneration(sessionId, userMessage.id);
@@ -1265,7 +1306,11 @@ function selectedScenario() {
     textarea.addEventListener("input", function () {
       var which = textarea.id === "ask-chat-input" ? "chat" : textarea.id === "ask-empty-input" ? "empty" : "home";
       if (textarea.value.trim()) showHint(which, "");
+      fitComposer(textarea);
+      syncSendButton(textarea);
     });
+    fitComposer(textarea);
+    syncSendButton(textarea);
   }
 
   function setupMockNote() {
@@ -1369,9 +1414,14 @@ function selectedScenario() {
       return;
     }
     applyGreeting();
+    refreshComposers();
     if (document.getElementById("ask-app")) syncChat();
     else updateRemaining(loadRemaining());
   }
+
+  window.addEventListener("resize", function () {
+    refreshComposers();
+  });
 
   window.addEventListener("scroll", function () {
     if (scrollLock) return;
@@ -1390,6 +1440,7 @@ function selectedScenario() {
       sessionStorage.removeItem(CLEAR_HOME_KEY);
     }
     resetHomeSend();
+    refreshComposers();
     sendGuard = false;
     if (runtime === "site" && document.getElementById("ask-app")) syncChat();
   });

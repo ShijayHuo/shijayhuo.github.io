@@ -157,7 +157,7 @@
   border: 1px solid var(--btn-border-color);
   border-radius: 0.9rem;
   background: var(--main-bg);
-  padding: 0.35rem 0.45rem 0.45rem;
+  padding: 0.35rem 0.4rem 0.4rem;
 }
 
 .ask-field:focus-within {
@@ -168,12 +168,14 @@
 .ask-field textarea {
   display: block;
   width: 100%;
-  min-height: 6.2rem;
-  resize: vertical;
+  min-height: 3.2rem;
+  max-height: 10.5rem;
+  resize: none;
+  overflow-y: hidden;
   border: 0;
   background: transparent;
   color: var(--text-color);
-  padding: 0.7rem 0.7rem 0.2rem;
+  padding: 0.85rem 0.75rem 0.25rem;
   font: inherit;
   font-size: 16px;
   line-height: 1.65;
@@ -190,13 +192,18 @@
 .ask-field-bar,
 .ask-field-actions {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-end;
-  gap: 0.65rem;
+  gap: 0.5rem;
+}
+
+.ask-field-bar {
+  min-height: 2.75rem;
+  padding: 0.1rem 0.15rem 0.1rem 0.45rem;
 }
 
 .ask-hint {
-  margin: 0;
+  margin: 0 0 0.45rem;
   margin-right: auto;
   color: var(--heading-color);
   font-size: 0.84rem;
@@ -206,41 +213,77 @@
   display: none;
 }
 
+.ask-icon {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
 .ask-send,
 .ask-stop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
-  min-height: 2.15rem;
-  border-radius: 0.55rem;
-  padding: 0.3rem 0.9rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  border-radius: 50%;
   font: inherit;
-  font-size: 0.92rem;
   cursor: pointer;
 }
 
 .ask-send {
-  border: 1px solid var(--btn-border-color);
-  background: var(--main-bg);
-  color: var(--text-color);
+  border: 0;
+  background: var(--link-color);
+  color: #fff;
 }
 
-.ask-send:hover,
+html[data-bs-theme="dark"] .ask-send:not(:disabled):not([aria-disabled="true"]) {
+  color: #1b1b1e;
+}
+
+.ask-send:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--link-color) 86%, #000);
+}
+
+html[data-bs-theme="dark"] .ask-send:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--link-color) 86%, #fff);
+}
+
+.ask-send:active:not(:disabled) {
+  background: color-mix(in srgb, var(--link-color) 74%, #000);
+}
+
+html[data-bs-theme="dark"] .ask-send:active:not(:disabled) {
+  background: color-mix(in srgb, var(--link-color) 74%, #fff);
+}
+
 .ask-send:focus-visible,
-.ask-stop:hover,
 .ask-stop:focus-visible {
-  border-color: var(--link-color);
-  color: var(--link-color);
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
 }
 
+.ask-send:disabled,
 .ask-send[aria-disabled='true'],
 .ask-send[aria-busy='true'] {
-  opacity: 0.45;
+  background: color-mix(in srgb, var(--heading-color) 16%, var(--main-bg));
+  color: var(--text-muted-color);
   cursor: not-allowed;
 }
 
 .ask-stop {
   border: 1px solid var(--btn-border-color);
-  background: transparent;
+  background: var(--main-bg);
   color: var(--text-color);
+}
+
+.ask-stop:hover,
+.ask-stop:focus-visible {
+  border-color: var(--link-color);
+  color: var(--link-color);
 }
 
 .ask-empty[hidden],
@@ -443,6 +486,10 @@ html:has(#ask-app) {
   .ask-demo-mark {
     margin-left: 2.4rem;
   }
+
+  .ask-field textarea {
+    min-height: 4.6rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -481,10 +528,14 @@ html:has(#ask-app) {
           <form id="ask-hero-form" class="ask-form">
             <div class="ask-field">
               <label class="ask-sr" for="ask-input">问题</label>
-              <textarea id="ask-input" rows="3" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
+              <textarea id="ask-input" rows="1" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
               <div class="ask-field-bar">
                 <p id="ask-hero-hint" class="ask-hint" role="status"></p>
-                <button id="ask-send" class="ask-send" type="submit">发送</button>
+                <div class="ask-field-actions">
+                  <button id="ask-send" class="ask-send" type="submit" disabled aria-label="发送" title="发送">
+                    <svg class="ask-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
               </div>
             </div>
           </form>
@@ -511,10 +562,14 @@ html:has(#ask-app) {
             <form id="ask-empty-form" class="ask-form">
               <div class="ask-field">
                 <label class="ask-sr" for="ask-empty-input">问题</label>
-                <textarea id="ask-empty-input" rows="3" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
+                <textarea id="ask-empty-input" rows="1" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
                 <div class="ask-field-bar">
                   <p id="ask-empty-hint" class="ask-hint" role="status"></p>
-                  <button id="ask-empty-send" class="ask-send" type="submit">发送</button>
+                  <div class="ask-field-actions">
+                    <button id="ask-empty-send" class="ask-send" type="submit" disabled aria-label="发送" title="发送">
+                      <svg class="ask-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             </form>
@@ -528,12 +583,16 @@ html:has(#ask-app) {
             <form id="ask-chat-form" class="ask-form ask-composer" hidden>
               <div class="ask-field">
                 <label class="ask-sr" for="ask-chat-input">消息</label>
-                <textarea id="ask-chat-input" rows="2" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
+                <textarea id="ask-chat-input" rows="1" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
                 <div class="ask-field-bar">
                   <p id="ask-chat-hint" class="ask-hint" role="status"></p>
                   <div class="ask-field-actions">
-                    <button id="ask-stop" class="ask-stop" type="button" hidden>停止</button>
-                    <button id="ask-chat-send" class="ask-send" type="submit">发送</button>
+                    <button id="ask-stop" class="ask-stop" type="button" hidden aria-label="停止" title="停止">
+                      <svg class="ask-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="7" y="7" width="10" height="10" rx="1" fill="currentColor"/></svg>
+                    </button>
+                    <button id="ask-chat-send" class="ask-send" type="submit" disabled aria-label="发送" title="发送">
+                      <svg class="ask-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1603,11 +1662,55 @@ function selectedScenario() {
     return !view || !view.hidden;
   }
 
+  function fitComposer(textarea) {
+    if (!textarea) return;
+    var max = 168;
+    textarea.style.height = "auto";
+    var next = textarea.scrollHeight;
+    if (next > max) {
+      textarea.style.height = max + "px";
+      textarea.style.overflowY = "auto";
+      return;
+    }
+    textarea.style.height = next + "px";
+    textarea.style.overflowY = "hidden";
+  }
+
+  function syncSendButton(textarea) {
+    if (!textarea) return;
+    var form = textarea.closest("form");
+    var button = form ? form.querySelector(".ask-send") : null;
+    if (!button) return;
+    var stop = form.querySelector(".ask-stop");
+    var generating = Boolean(stop && !stop.hidden);
+    var busy = button.getAttribute("aria-busy") === "true";
+    var empty = textarea.value.trim().length === 0;
+    button.disabled = empty || generating || busy;
+    if (button.getAttribute("aria-busy") === "true") button.setAttribute("aria-label", "发送中");
+    else button.setAttribute("aria-label", "发送");
+    button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
+  }
+
+  function clearComposer(textarea) {
+    if (!textarea) return;
+    textarea.value = "";
+    fitComposer(textarea);
+    syncSendButton(textarea);
+  }
+
+  function refreshComposers() {
+    ["ask-input", "ask-empty-input", "ask-chat-input"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      fitComposer(el);
+      syncSendButton(el);
+    });
+  }
+
   function setGeneratingUI(on) {
     var stop = document.getElementById("ask-stop");
-    var send = document.getElementById("ask-chat-send");
     if (stop) stop.hidden = !on;
-    if (send) send.setAttribute("aria-disabled", on ? "true" : "false");
+    syncSendButton(document.getElementById("ask-chat-input"));
   }
 
   function linkElement(source) {
@@ -2227,8 +2330,7 @@ function selectedScenario() {
     markNav(name === "ask");
     if (name === "home") {
       if (active) stopActive("leave");
-      var input = document.getElementById("ask-input");
-      if (input) input.value = "";
+      clearComposer(document.getElementById("ask-input"));
       showHint("home", "");
       resetHomeSend();
       window.scrollTo(0, 0);
@@ -2241,17 +2343,17 @@ function selectedScenario() {
 
   function resetHomeSend() {
     var button = document.getElementById("ask-send");
-    if (button) {
-      button.textContent = "发送";
-      button.removeAttribute("aria-busy");
-    }
+    if (!button) return;
+    button.removeAttribute("aria-busy");
+    syncSendButton(document.getElementById("ask-input"));
   }
 
   function markHomeSending() {
     var button = document.getElementById("ask-send");
     if (!button) return;
     button.setAttribute("aria-busy", "true");
-    button.textContent = "发送中";
+    button.setAttribute("aria-label", "发送中");
+    button.disabled = true;
   }
 
   function sendHome(text) {
@@ -2267,8 +2369,7 @@ function selectedScenario() {
     markHomeSending();
     if (active) stopActive("user");
     var id = createSession(value);
-    var input = document.getElementById("ask-input");
-    if (input) input.value = "";
+    clearComposer(document.getElementById("ask-input"));
     showHint("home", "");
     if (runtime === "file") {
       history.pushState({ askView: "ask", askSessionId: id }, "", location.pathname);
@@ -2308,8 +2409,7 @@ function selectedScenario() {
       userMessage = appendUser(sessionId, value);
     }
     ["ask-chat-input", "ask-empty-input"].forEach(function (id) {
-      var field = document.getElementById(id);
-      if (field) field.value = "";
+      clearComposer(document.getElementById(id));
     });
     sendGuard = false;
     startGeneration(sessionId, userMessage.id);
@@ -2336,7 +2436,11 @@ function selectedScenario() {
     textarea.addEventListener("input", function () {
       var which = textarea.id === "ask-chat-input" ? "chat" : textarea.id === "ask-empty-input" ? "empty" : "home";
       if (textarea.value.trim()) showHint(which, "");
+      fitComposer(textarea);
+      syncSendButton(textarea);
     });
+    fitComposer(textarea);
+    syncSendButton(textarea);
   }
 
   function setupMockNote() {
@@ -2440,9 +2544,14 @@ function selectedScenario() {
       return;
     }
     applyGreeting();
+    refreshComposers();
     if (document.getElementById("ask-app")) syncChat();
     else updateRemaining(loadRemaining());
   }
+
+  window.addEventListener("resize", function () {
+    refreshComposers();
+  });
 
   window.addEventListener("scroll", function () {
     if (scrollLock) return;
@@ -2461,6 +2570,7 @@ function selectedScenario() {
       sessionStorage.removeItem(CLEAR_HOME_KEY);
     }
     resetHomeSend();
+    refreshComposers();
     sendGuard = false;
     if (runtime === "site" && document.getElementById("ask-app")) syncChat();
   });

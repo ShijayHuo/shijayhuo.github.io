@@ -305,7 +305,7 @@
   border: 1px solid var(--btn-border-color);
   border-radius: 0.9rem;
   background: var(--main-bg);
-  padding: 0.35rem 0.45rem 0.45rem;
+  padding: 0.35rem 0.4rem 0.4rem;
 }
 
 .ask-field:focus-within {
@@ -316,12 +316,14 @@
 .ask-field textarea {
   display: block;
   width: 100%;
-  min-height: 6.2rem;
-  resize: vertical;
+  min-height: 3.2rem;
+  max-height: 10.5rem;
+  resize: none;
+  overflow-y: hidden;
   border: 0;
   background: transparent;
   color: var(--text-color);
-  padding: 0.7rem 0.7rem 0.2rem;
+  padding: 0.85rem 0.75rem 0.25rem;
   font: inherit;
   font-size: 16px;
   line-height: 1.65;
@@ -338,13 +340,18 @@
 .ask-field-bar,
 .ask-field-actions {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-end;
-  gap: 0.65rem;
+  gap: 0.5rem;
+}
+
+.ask-field-bar {
+  min-height: 2.75rem;
+  padding: 0.1rem 0.15rem 0.1rem 0.45rem;
 }
 
 .ask-hint {
-  margin: 0;
+  margin: 0 0 0.45rem;
   margin-right: auto;
   color: var(--heading-color);
   font-size: 0.84rem;
@@ -354,41 +361,77 @@
   display: none;
 }
 
+.ask-icon {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
 .ask-send,
 .ask-stop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
-  min-height: 2.15rem;
-  border-radius: 0.55rem;
-  padding: 0.3rem 0.9rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  border-radius: 50%;
   font: inherit;
-  font-size: 0.92rem;
   cursor: pointer;
 }
 
 .ask-send {
-  border: 1px solid var(--btn-border-color);
-  background: var(--main-bg);
-  color: var(--text-color);
+  border: 0;
+  background: var(--link-color);
+  color: #fff;
 }
 
-.ask-send:hover,
+html[data-bs-theme="dark"] .ask-send:not(:disabled):not([aria-disabled="true"]) {
+  color: #1b1b1e;
+}
+
+.ask-send:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--link-color) 86%, #000);
+}
+
+html[data-bs-theme="dark"] .ask-send:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--link-color) 86%, #fff);
+}
+
+.ask-send:active:not(:disabled) {
+  background: color-mix(in srgb, var(--link-color) 74%, #000);
+}
+
+html[data-bs-theme="dark"] .ask-send:active:not(:disabled) {
+  background: color-mix(in srgb, var(--link-color) 74%, #fff);
+}
+
 .ask-send:focus-visible,
-.ask-stop:hover,
 .ask-stop:focus-visible {
-  border-color: var(--link-color);
-  color: var(--link-color);
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
 }
 
+.ask-send:disabled,
 .ask-send[aria-disabled='true'],
 .ask-send[aria-busy='true'] {
-  opacity: 0.45;
+  background: color-mix(in srgb, var(--heading-color) 16%, var(--main-bg));
+  color: var(--text-muted-color);
   cursor: not-allowed;
 }
 
 .ask-stop {
   border: 1px solid var(--btn-border-color);
-  background: transparent;
+  background: var(--main-bg);
   color: var(--text-color);
+}
+
+.ask-stop:hover,
+.ask-stop:focus-visible {
+  border-color: var(--link-color);
+  color: var(--link-color);
 }
 
 .ask-empty[hidden],
@@ -590,6 +633,10 @@ html:has(#ask-app) {
 
   .ask-demo-mark {
     margin-left: 2.4rem;
+  }
+
+  .ask-field textarea {
+    min-height: 4.6rem;
   }
 }
 

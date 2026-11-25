@@ -161,10 +161,14 @@ var html = `<!DOCTYPE html>
           <form id="ask-hero-form" class="ask-form">
             <div class="ask-field">
               <label class="ask-sr" for="ask-input">问题</label>
-              <textarea id="ask-input" rows="3" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
+              <textarea id="ask-input" rows="1" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
               <div class="ask-field-bar">
                 <p id="ask-hero-hint" class="ask-hint" role="status"></p>
-                <button id="ask-send" class="ask-send" type="submit">发送</button>
+                <div class="ask-field-actions">
+                  <button id="ask-send" class="ask-send" type="submit" disabled aria-label="发送" title="发送">
+                    <svg class="ask-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
               </div>
             </div>
           </form>
@@ -186,10 +190,14 @@ var html = `<!DOCTYPE html>
             <form id="ask-empty-form" class="ask-form">
               <div class="ask-field">
                 <label class="ask-sr" for="ask-empty-input">问题</label>
-                <textarea id="ask-empty-input" rows="3" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
+                <textarea id="ask-empty-input" rows="1" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
                 <div class="ask-field-bar">
                   <p id="ask-empty-hint" class="ask-hint" role="status"></p>
-                  <button id="ask-empty-send" class="ask-send" type="submit">发送</button>
+                  <div class="ask-field-actions">
+                    <button id="ask-empty-send" class="ask-send" type="submit" disabled aria-label="发送" title="发送">
+                      <svg class="ask-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             </form>
@@ -203,12 +211,16 @@ var html = `<!DOCTYPE html>
             <form id="ask-chat-form" class="ask-form ask-composer" hidden>
               <div class="ask-field">
                 <label class="ask-sr" for="ask-chat-input">消息</label>
-                <textarea id="ask-chat-input" rows="2" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
+                <textarea id="ask-chat-input" rows="1" placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我" autocomplete="off" enterkeyhint="send"></textarea>
                 <div class="ask-field-bar">
                   <p id="ask-chat-hint" class="ask-hint" role="status"></p>
                   <div class="ask-field-actions">
-                    <button id="ask-stop" class="ask-stop" type="button" hidden>停止</button>
-                    <button id="ask-chat-send" class="ask-send" type="submit">发送</button>
+                    <button id="ask-stop" class="ask-stop" type="button" hidden aria-label="停止" title="停止">
+                      <svg class="ask-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="7" y="7" width="10" height="10" rx="1" fill="currentColor"/></svg>
+                    </button>
+                    <button id="ask-chat-send" class="ask-send" type="submit" disabled aria-label="发送" title="发送">
+                      <svg class="ask-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
                   </div>
                 </div>
               </div>
