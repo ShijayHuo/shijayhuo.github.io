@@ -1,0 +1,25 @@
+name = "ajie-ask"
+main = "src/index.ts"
+compatibility_date = "2026-11-25"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[observability.traces]
+enabled = true
+
+# 非密钥。空的模型配置不写在这里，避免把未配置的 Worker 部署成假数据。
+# ASK_ALLOW_MOCK 与 ASK_ALLOW_DEV_IP 必须保持 "0"。本地试验只放在不提交的 .dev.vars。
+[vars]
+ASK_ALLOWED_ORIGINS = "https://shijayhuo.github.io"
+ASK_ALLOW_MOCK = "0"
+ASK_ALLOW_DEV_IP = "0"
+
+# database_id 是占位符。本仓库没有创建 Cloudflare D1。
+# 手工创建并替换之后才能部署。迁移只建表，不会清空额度。
+[[d1_databases]]
+binding = "QUOTA_DB"
+database_name = "ajie-ask-quota"
+database_id = "00000000-0000-4000-8000-000000000000"
+migrations_dir = "migrations"

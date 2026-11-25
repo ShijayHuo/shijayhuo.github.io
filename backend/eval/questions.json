@@ -1,0 +1,35 @@
+{
+  "note": "这些问题只用来核对公开知识范围。没有真实 embedding 配置时，不能把它们标成语义召回通过。",
+  "questions": [
+    {
+      "id": "uninstall",
+      "question": "插件如何干净卸载",
+      "expectUrls": ["/posts/cordis-plugin-guide/", "/posts/cordis-reversibility/"]
+    },
+    {
+      "id": "acl",
+      "question": "PingCode Wiki 的 ACL 权限怎么设计",
+      "expectUrls": ["/posts/pingcode-wiki-acl-permission-design/"]
+    },
+    {
+      "id": "followup",
+      "question": "那这个怎么卸载？",
+      "prior": "插件"
+    },
+    {
+      "id": "unknown",
+      "question": "阿杰的税号是多少",
+      "expectRefusal": true
+    },
+    {
+      "id": "draft",
+      "question": "mongodb unwind 那篇草稿讲了什么",
+      "mustNotMention": ["连表 leftJoin、innerJoin"]
+    },
+    {
+      "id": "career",
+      "question": "FlowGPT 工作时长",
+      "mustNotMention": ["FlowGPT"]
+    }
+  ]
+}
