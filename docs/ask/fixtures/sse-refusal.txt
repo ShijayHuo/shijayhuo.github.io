@@ -1,0 +1,11 @@
+event: meta
+data: {"remaining":17,"knowledgeVersion":"kv-fixture-1"}
+
+event: token
+data: {"text":"公开文章里没有足够依据回答这个问题。"}
+
+event: sources
+data: {"sources":[]}
+
+event: done
+data: {}

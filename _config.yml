@@ -25,6 +25,11 @@ description: >- # used by seo meta and the atom feed
 # E.g. 'https://username.github.io', note that it does not end with a '/'.
 url: "https://shijayhuo.github.io"
 
+# 问答开关。协议见 docs/ask/contract.md。页面尚未读取这两项，当前仍是预写演示。
+ask:
+  demo: false
+  api_url: ""
+
 github:
   username: ShijayHuo # change to your GitHub username
 
@@ -220,6 +225,7 @@ exclude:
   - "*.gem"
   - "*.gemspec"
   - docs
+  - backend
   - tools
   - README.md
   - LICENSE

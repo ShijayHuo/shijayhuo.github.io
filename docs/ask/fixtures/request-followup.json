@@ -1,0 +1,15 @@
+{
+  "question": "那这个怎么卸载？",
+  "history": [
+    {
+      "role": "user",
+      "content": "Cordis 插件怎么管理？",
+      "sourceIds": []
+    },
+    {
+      "role": "assistant",
+      "content": "公开文章里把卸载写成可逆的插件生命周期。",
+      "sourceIds": ["cordis-uninstall-01"]
+    }
+  ]
+}

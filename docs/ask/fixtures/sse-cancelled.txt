@@ -1,0 +1,5 @@
+event: meta
+data: {"remaining":15,"knowledgeVersion":"kv-fixture-1"}
+
+event: token
+data: {"text":"关于页"}

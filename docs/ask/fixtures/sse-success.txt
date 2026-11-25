@@ -1,0 +1,14 @@
+event: meta
+data: {"remaining":19,"knowledgeVersion":"kv-fixture-1"}
+
+event: token
+data: {"text":"关于页写的是霍世杰。"}
+
+event: token
+data: {"text":"从业 9 年。"}
+
+event: sources
+data: {"sources":[{"id":"about-intro","title":"关于","url":"/about/","heading":""}]}
+
+event: done
+data: {}

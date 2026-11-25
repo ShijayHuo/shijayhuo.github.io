@@ -1,0 +1,14 @@
+event: meta
+data: {"remaining":18,"knowledgeVersion":"kv-fixture-1"}
+
+event: token
+data: {"text":"上一篇来源仍在当前知识版本里。"}
+
+event: token
+data: {"text":"卸载要看 Cordis 插件那篇文章。"}
+
+event: sources
+data: {"sources":[{"id":"cordis-uninstall-01","title":"DeepSeek Harness 的底层基石——Cordis（一）","url":"/posts/cordis-plugin-guide/","heading":"什么是 Cordis？"}]}
+
+event: done
+data: {}
