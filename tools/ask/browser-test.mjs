@@ -172,6 +172,13 @@ try {
     assert(radius < 0.6, "输入框圆角被改掉");
     assert(await page.locator("#ask-input").evaluate((el) => getComputedStyle(el).resize) === "none", "还能拖拽高度");
     assert(await page.locator("#ask-send").isDisabled(), "空内容仍能点发送");
+    const buttonSize = await page.locator("#ask-send").evaluate((el) => {
+      const hit = el.getBoundingClientRect().width;
+      const visual = parseFloat(getComputedStyle(el, "::before").width);
+      return { hit, visual };
+    });
+    assert(buttonSize.hit >= 43, "可点区域小于 44px: " + buttonSize.hit);
+    assert(buttonSize.visual > 30 && buttonSize.visual < buttonSize.hit - 4, "视觉按钮没有缩小: " + buttonSize.visual);
     const before = await page.locator("#ask-input").evaluate((el) => el.getBoundingClientRect().height);
     await page.locator("#ask-input").press("Enter");
     assert((await page.locator("#ask-hero-hint").innerText()).includes("请输入内容后再发送"), "空白提示");
