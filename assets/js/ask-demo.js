@@ -229,12 +229,33 @@
 
   function askPageUrl() {
     var hero = document.getElementById("ask-hero");
-    return (hero && hero.getAttribute("data-ask-url")) || "/ask/";
+    var app = document.getElementById("ask-app");
+    return (hero && hero.getAttribute("data-ask-url")) || (app && app.getAttribute("data-ask-url")) || "/ask/";
   }
 
-  function navigationType() {
-    var entries = performance.getEntriesByType("navigation");
-    return entries && entries[0] ? entries[0].type : "";
+  function shanghaiHour() {
+    var parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Shanghai",
+      hour: "numeric",
+      hourCycle: "h23"
+    }).formatToParts(new Date());
+    var hour = parts.filter(function (part) { return part.type === "hour"; })[0];
+    return Number(hour && hour.value);
+  }
+
+  function greetingText() {
+    var hour = shanghaiHour();
+    if (hour >= 5 && hour < 12) return "上午好";
+    if (hour >= 12 && hour < 18) return "下午好";
+    return "晚上好";
+  }
+
+  function applyGreeting() {
+    var text = greetingText();
+    ["ask-hero-title", "ask-greet"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = text;
+    });
   }
 
   function adoptSession(id) {
@@ -254,10 +275,6 @@
       sessionStorage.removeItem(PENDING_KEY);
       adoptSession(pending);
       return pending;
-    }
-    if (navigationType() === "reload" && store.currentId && store.sessions[store.currentId]) {
-      adoptSession(store.currentId);
-      return store.currentId;
     }
     return null;
   }
@@ -379,7 +396,8 @@
   }
 
   function showHint(which, message) {
-    var el = document.getElementById(which === "chat" ? "ask-chat-hint" : "ask-hero-hint");
+    var id = which === "chat" ? "ask-chat-hint" : which === "empty" ? "ask-empty-hint" : "ask-hero-hint";
+    var el = document.getElementById(id);
     if (el) el.textContent = message || "";
   }
 
@@ -421,9 +439,6 @@
     sources.hidden = !hasSources;
     sources.replaceChildren();
     if (!hasSources) return;
-    var caption = document.createElement("p");
-    caption.textContent = "已发布文章";
-    sources.appendChild(caption);
     var list = document.createElement("ul");
     message.sources.forEach(function (source) {
       var item = document.createElement("li");
@@ -437,11 +452,6 @@
     var article = document.createElement("article");
     article.className = "ask-msg ask-msg-" + message.role;
     article.dataset.id = message.id;
-
-    var label = document.createElement("p");
-    label.className = "ask-msg-label";
-    label.textContent = message.role === "user" ? "提问" : "演示回答";
-    article.appendChild(label);
 
     var bubble = document.createElement("div");
     bubble.className = "ask-bubble";
@@ -457,13 +467,13 @@
 
     var pending = document.createElement("p");
     pending.className = "ask-pending";
-    pending.textContent = "正在生成演示回答";
+    pending.textContent = "正在生成";
     pending.hidden = !(message.pending && !message.text);
     bubble.insertBefore(pending, text);
 
     var stopped = document.createElement("p");
     stopped.className = "ask-stopped";
-    stopped.textContent = "已停止生成";
+    stopped.textContent = "已停止";
     stopped.hidden = !message.stopped;
     bubble.appendChild(stopped);
 
@@ -484,9 +494,14 @@
     messages.forEach(function (message) {
       box.appendChild(renderMessage(message));
     });
-    if (empty) empty.hidden = messages.length > 0;
-    var suggestions = document.querySelector("#ask-app .ask-suggestions");
-    if (suggestions) suggestions.hidden = messages.length > 0;
+    var hasMessages = messages.length > 0;
+    var thread = document.getElementById("ask-thread");
+    var composer = document.getElementById("ask-chat-form");
+    var app = document.getElementById("ask-app");
+    if (empty) empty.hidden = hasMessages;
+    if (thread) thread.hidden = !hasMessages;
+    if (composer) composer.hidden = !hasMessages;
+    if (app) app.setAttribute("data-ask-state", hasMessages ? "chat" : "empty");
     var last = box.lastElementChild;
     if (last && messages.length && followAnswer) reveal(last);
   }
@@ -593,7 +608,7 @@
     };
     setGeneratingUI(true);
     followAnswer = true;
-    setStatus(index ? "继续生成演示回答" : "正在生成演示回答");
+    setStatus(index ? "继续生成" : "正在生成");
     renderSession(loadStore().sessions[sessionId]);
     var questions = document.querySelectorAll("#ask-messages .ask-msg-user");
     var question = questions[questions.length - 1];
@@ -628,7 +643,7 @@
         stopTimer();
         active = null;
         setGeneratingUI(false);
-        setStatus("演示回答已完成");
+        setStatus("");
         if (!paintAssistant(live)) renderSession(liveSession);
         return;
       }
@@ -657,8 +672,8 @@
       renderSession(session);
     }
     setGeneratingUI(false);
-    setStatus("已停止生成");
-    showHint("chat", "已停止生成");
+    setStatus("已停止");
+    showHint("chat", "");
   }
 
   function syncChat() {
@@ -686,6 +701,20 @@
     if (userMessage) startGeneration(session.id, userMessage.id);
   }
 
+  function markNav(isAsk) {
+    if (runtime !== "file") return;
+    document.querySelectorAll("#sidebar .nav-item").forEach(function (item) {
+      item.classList.remove("active");
+    });
+    var link = document.querySelector(isAsk ? "[data-ask-nav='ask']" : "#sidebar .nav-item [data-ask-nav='home']");
+    if (link && link.closest(".nav-item")) link.closest(".nav-item").classList.add("active");
+    var title = document.getElementById("topbar-title");
+    if (title) {
+      if (!title.dataset.askHomeTitle) title.dataset.askHomeTitle = title.textContent.trim();
+      title.textContent = isAsk ? "AI 问答" : title.dataset.askHomeTitle;
+    }
+  }
+
   function showView(name) {
     var home = document.getElementById("view-home");
     var ask = document.getElementById("view-ask");
@@ -693,6 +722,7 @@
     home.hidden = name !== "home";
     ask.hidden = name !== "ask";
     document.dispatchEvent(new CustomEvent("ask-view", { detail: { view: name } }));
+    markNav(name === "ask");
     if (name === "home") {
       haltActive(false);
       var input = document.getElementById("ask-input");
@@ -702,6 +732,7 @@
       window.scrollTo(0, 0);
       return;
     }
+    haltActive(false);
     window.scrollTo(0, 0);
     syncChat();
   }
@@ -756,14 +787,15 @@
   function sendChat(text) {
     if (sendGuard) return;
     if (active) {
-      showHint("chat", "请等待当前演示回答结束，或先停止");
+      showHint("chat", "请先停止，或等这一条结束");
       return;
     }
     var value = String(text || "").trim();
     if (!value) {
-      showHint("chat", "请输入内容后再发送");
-      var chatInput = document.getElementById("ask-chat-input");
-      if (chatInput) chatInput.focus();
+      var onEmpty = document.getElementById("ask-empty") && !document.getElementById("ask-empty").hidden;
+      showHint(onEmpty ? "empty" : "chat", "请输入内容后再发送");
+      var focus = document.getElementById(onEmpty ? "ask-empty-input" : "ask-chat-input");
+      if (focus) focus.focus();
       return;
     }
     sendGuard = true;
@@ -777,8 +809,10 @@
     } else {
       userMessage = appendUser(sessionId, value);
     }
-    var input = document.getElementById("ask-chat-input");
-    if (input) input.value = "";
+    ["ask-chat-input", "ask-empty-input"].forEach(function (id) {
+      var field = document.getElementById(id);
+      if (field) field.value = "";
+    });
     sendGuard = false;
     startGeneration(sessionId, userMessage.id);
   }
@@ -816,6 +850,15 @@
         sendHome(input ? input.value : "");
       });
     }
+    var emptyForm = document.getElementById("ask-empty-form");
+    if (emptyForm) {
+      emptyForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        var input = document.getElementById("ask-empty-input");
+        if (input && !String(input.value || "").trim()) showHint("empty", "请输入内容后再发送");
+        sendChat(input ? input.value : "");
+      });
+    }
     var chatForm = document.getElementById("ask-chat-form");
     if (chatForm) {
       chatForm.addEventListener("submit", function (event) {
@@ -828,6 +871,10 @@
       var input = document.getElementById("ask-input");
       sendHome(input ? input.value : "");
     });
+    bindComposer(document.getElementById("ask-empty-input"), function () {
+      var input = document.getElementById("ask-empty-input");
+      sendChat(input ? input.value : "");
+    });
     bindComposer(document.getElementById("ask-chat-input"), function () {
       var input = document.getElementById("ask-chat-input");
       sendChat(input ? input.value : "");
@@ -835,20 +882,21 @@
     var stop = document.getElementById("ask-stop");
     if (stop) stop.addEventListener("click", stopGeneration);
     document.addEventListener("click", function (event) {
-      var button = event.target.closest("[data-ask-suggest]");
-      if (!button) return;
-      var text = button.getAttribute("data-ask-suggest") || "";
-      if (button.closest("#ask-app")) sendChat(text);
-      else sendHome(text, button);
+      var askNav = event.target.closest("[data-ask-nav='ask']");
+      if (!askNav) return;
+      sessionStorage.removeItem(PENDING_KEY);
+      if (runtime !== "file") return;
+      event.preventDefault();
+      history.pushState({ askView: "ask" }, "", location.pathname);
+      showView("ask");
     });
-    var back = document.getElementById("ask-back");
-    if (back && runtime === "file") {
-      back.addEventListener("click", function (event) {
-        event.preventDefault();
-        history.pushState({ askView: "home" }, "", location.pathname);
-        showView("home");
-      });
-    }
+    document.addEventListener("ask-home", function () {
+      if (runtime !== "file") return;
+      var ask = document.getElementById("view-ask");
+      if (!ask || ask.hidden) return;
+      history.pushState({ askView: "home" }, "", location.pathname);
+      showView("home");
+    });
     if (runtime === "file") {
       window.addEventListener("popstate", function (event) {
         var view = event.state && event.state.askView === "ask" ? "ask" : "home";
@@ -866,10 +914,12 @@
       if (!history.state || !history.state.askView) {
         history.replaceState({ askView: "home" }, "", location.pathname);
       }
+      applyGreeting();
       var initial = history.state && history.state.askView === "ask" ? "ask" : "home";
       showView(initial);
       return;
     }
+    applyGreeting();
     if (document.getElementById("ask-app")) syncChat();
   }
 
