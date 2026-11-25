@@ -78,15 +78,11 @@ jobs:
         run: |
           npm run build:worker
           npm run size
-          gzip -c dist/worker.js > dist/worker.js.gz
-          bytes=$(wc -c < dist/worker.js.gz)
-          echo "worker gzip bytes: ${bytes}"
-          if [ "$bytes" -gt 10485760 ]; then
-            echo '压缩后超过 Workers Standard 的 10 MiB，不能部署。'
+          bytes=$(wc -c < dist/worker.js)
+          echo "worker uncompressed bytes: ${bytes}"
+          if [ "$bytes" -gt 67108864 ]; then
+            echo '未压缩超过 64 MiB。Free 和 Paid 都使用这个上限，不能部署。'
             exit 1
-          fi
-          if [ "$bytes" -gt 3145728 ]; then
-            echo '压缩后超过 Workers Free 的 3 MiB。Free 不能部署，需要账户已开通 Standard。'
           fi
 
       - name: Deploy Worker

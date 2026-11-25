@@ -1,6 +1,8 @@
 name = "ajie-ask"
 main = "src/index.ts"
 compatibility_date = "2026-11-25"
+# 账户子域已是 aaaaaajie666。首次部署后的地址是
+# https://ajie-ask.aaaaaajie666.workers.dev 。这个脚本现在还不存在。
 compatibility_flags = ["nodejs_compat"]
 
 [observability]
