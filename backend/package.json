@@ -1,0 +1,21 @@
+{
+  "name": "ajie-ask",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "build:knowledge": "node --experimental-strip-types scripts/build-knowledge.ts",
+    "build:worker": "esbuild src/index.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/worker.js --metafile=dist/meta.json",
+    "size": "node --experimental-strip-types scripts/report-size.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.0",
+    "wrangler": "^4.50.0"
+  }
+}
