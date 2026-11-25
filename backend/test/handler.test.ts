@@ -90,7 +90,7 @@ test("mock 知识包在未显式允许时不会回答", async () => {
 test("证据足够时按契约输出 SSE，来源不采用模型写下的网址", async () => {
   const database = createSqliteQuotaDatabase();
   const embedding = fixedEmbedding([1, 0, 0]);
-  const chat = fixedChat(["见 https://evil.example/phish"]);
+  const chat = fixedChat(["见 https://evil.example/phish\n{\"cite\":[\"about-intro\"]}"]);
   const response = await createAnswer(askRequest(readFixture("request-first.json")), askEnv(), {
     bundle: await aboutBundle(),
     database,
@@ -104,7 +104,9 @@ test("证据足够时按契约输出 SSE，来源不采用模型写下的网址"
   assert.deepEqual((events[2]?.data as { sources: unknown }).sources, (parseSse(readFixture("sse-success.txt")).find((event) => event.event === "sources")?.data as { sources: unknown }).sources);
   const sources = JSON.stringify((events.find((event) => event.event === "sources")?.data as { sources: unknown }).sources);
   assert.equal(sources.includes("evil.example"), false);
-  assert.match(events.filter((event) => event.event === "token").map((event) => (event.data as { text: string }).text).join(""), /evil\.example/);
+  const answer = events.filter((event) => event.event === "token").map((event) => (event.data as { text: string }).text).join("");
+  assert.match(answer, /evil\.example/);
+  assert.equal(answer.includes("\"cite\""), false);
   assert.equal((chat.calls[0]?.[0]?.content), SYSTEM_RULES);
   assert.equal(chat.calls[0]?.[0]?.content.includes("你是谁"), false);
   assert.match(chat.calls[0]?.[1]?.content ?? "", /你是谁/);
@@ -123,7 +125,7 @@ test("追问会重新解析历史来源，孤立的弱检索不会硬答", async
     }),
   ]);
   const embedding = fixedEmbedding([0, 1, 0]);
-  const chat = fixedChat(["根据上一篇来源回答。"]);
+  const chat = fixedChat(["根据上一篇来源回答。\n{\"cite\":[\"cordis-uninstall-01\"]}"]);
   const follow = await createAnswer(askRequest(readFixture("request-followup.json")), askEnv(), {
     bundle,
     database: createSqliteQuotaDatabase(),

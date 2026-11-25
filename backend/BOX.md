@@ -87,11 +87,11 @@ node --experimental-strip-types scripts/switch-local.ts --detach-and-serve --exp
 export ASK_BUNDLE_FILE="/workspace/ajie-ask-validation/ajie-ask-box/backend/dist/knowledge/bundle.json"
 export ASK_PID_FILE="/workspace/ajie-ask-validation/ajie-ask-box/backend/dist/validation/api.pid"
 export ASK_QUOTA_FILE="/workspace/ajie-ask-validation/ajie-ask-box/backend/dist/validation/quota.sqlite"
-export ASK_QUOTA_EXPECT_USED=8
+export ASK_QUOTA_EXPECT_USED=11
 node --experimental-strip-types scripts/serve-validation.ts
 ```
 
-启动会再复制一份额度备份，并核对最大 `used` 仍是 8。对不上就在写入前退出。知识包必须是已经建好的 flash 1024 包，不能是哈希 mock。日志里 `probe` 应为 `stream-ok`。
+启动会再复制一份额度备份，并核对最大 `used` 与 `ASK_QUOTA_EXPECT_USED` 一致。第一次切换时是 8；这次真实问答之后是 11，剩余 9。对不上就在写入前退出。知识包必须是已经建好的 flash 1024 包，不能是哈希 mock。日志里 `probe` 应为 `stream-ok`。
 
 只测检索、显式 mock 对话时，在同一命令后加 `--mock-chat`。没有 `--mock-chat` 又没有对话密钥时直接退出，不会偷偷改成 mock。
 
@@ -106,6 +106,36 @@ node --experimental-strip-types scripts/serve-validation.ts --stop
 若 pid 仍存活，再次启动会退出，并说明额度文件不会改动。过期 pid 可以重新监听，打开额度库时只用 `CREATE TABLE IF NOT EXISTS`，没有 `DELETE` 或 `DROP`。
 
 额度要保持不变，还必须继续用同一把 `QUOTA_HMAC_KEY`。更换这把键会让旧计数对不上，看起来像被清零。不要为了重启而换键，也不要删 `quota.sqlite`。
+
+## 这次只重启真实接口
+
+当前 box 是真 flash 包加 deepseek。静态站 pid `1754326` 继续听 8765，不要动它，也不要动 8790、8791。不要重新构建知识包，不要删除或清空 `quota.sqlite`。额度现在是 used 11、剩余 9，`QUOTA_HMAC_KEY` 保持原值。
+
+接口进程是 `1754513`，外层 wrapper 是 `1754512`。先打上增量补丁，再只停止接口，让新代码被重新拉起。不要先杀 wrapper 再打补丁。
+
+```bash
+cd /workspace/ajie-ask-validation/ajie-ask-box
+git apply --check /opt/cursor/artifacts/ajie-ask-backend-cite.patch
+git apply /opt/cursor/artifacts/ajie-ask-backend-cite.patch
+cd backend
+export ASK_PID_FILE="/workspace/ajie-ask-validation/ajie-ask-box/backend/dist/validation/api.pid"
+export ASK_QUOTA_FILE="/workspace/ajie-ask-validation/ajie-ask-box/backend/dist/validation/quota.sqlite"
+node --experimental-strip-types scripts/serve-validation.ts --stop
+```
+
+`--stop` 只给 pid 文件里的接口进程发 `SIGTERM`，不改额度。若 pid 文件不是 `1754513`，不要用 `--stop`，确认命令行是 `serve-validation` 后再只对 `1754513` 发 `SIGTERM`。不要给 `1754326` 发信号。
+
+若 wrapper `1754512` 发现子进程退出后用同一命令把接口拉起来，新进程会读到补丁后的代码。若 8787 没有再起来，用原来的 wrapper 命令重开一次，环境变量不变，并加上：
+
+```bash
+export ASK_QUOTA_EXPECT_USED=11
+export ASK_BUNDLE_FILE="/workspace/ajie-ask-validation/ajie-ask-box/backend/dist/knowledge/bundle.json"
+node --experimental-strip-types scripts/serve-validation.ts
+```
+
+对不上 used 11 就在写入前退出。启动日志仍应是真实 flash 和 `probe: stream-ok`。然后用原来的三题再看一次：Redis 改述只留下真正支持回答的文章；单线程追问不再附上没被引用的百万导入；无依据问题正文可以拒答，`sources` 应是 `[]`。这仍不是召回验收。
+
+引用约束：生成仍是同一次 deepseek 流。模型在正文最后一行给出用过的证据 id，服务端只保留这些 id 和本次检索证据的交集。没有这行、或一行都不用，`sources` 就是空的。不新增模型，不改 0.25，也不按某个问句做特判。
 
 ## 召回记录
 

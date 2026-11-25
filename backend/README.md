@@ -59,6 +59,8 @@ node --experimental-strip-types scripts/build-knowledge.ts --validation \
 
 `0.25` 仍是代码里的起步门限，不是已校准阈值。四句探针里无关余弦约 0.308，相关约 0.427 和 0.391。全库冒烟是 102 篇、669 片：6 个正例 Top1 分数 0.5836 到 0.7509；无税号负例 `/about/` 0.4486，未公开履历负例 `/about/` 0.4507。0.25 会把这两个负例送进生成。不能用这 8 题选一个中间值然后宣称通过。评测规则在 `backend/eval/calibration.md`。`scripts/eval-recall.ts` 拒绝 `--min-score`，报告里的 `recallAccepted` 固定为 false。
 
+过了门限的块会交给同一次生成，但 `sources` 只保留模型最后一行 `{"cite":["id"]}` 里、并且属于这次证据的 id。模型判断证据不够时这一行是空数组，来源就是 `[]`。正文里的网址不会变成来源。这不是新的模型服务，也没有改 0.25。
+
 box 的映射、端口、pid 和额度文件见 `backend/BOX.md`。
 
 ## D1

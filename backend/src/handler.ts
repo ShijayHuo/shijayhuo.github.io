@@ -15,7 +15,8 @@ import { createMockChat, createMockEmbedding } from "./mock-adapter.ts";
 import { createOpenAIChat, createOpenAIEmbedding } from "./openai-adapter.ts";
 import { createPrompt } from "./prompt.ts";
 import { createQuotaKey, readTrustedIp, updateQuotaByKey } from "./quota.ts";
-import { createRetrievalQuery, createSourceList, encodeSse, isFollowUpQuestion, parseAskRequest } from "./protocol.ts";
+import { createCitationSplitter, sourcesFromCitations } from "./cite.ts";
+import { createRetrievalQuery, encodeSse, isFollowUpQuestion, parseAskRequest } from "./protocol.ts";
 import { findChunksByQuery } from "./retrieve.ts";
 import type { AskBindings, ChatAdapter, EmbeddingAdapter, KnowledgeBundle, QuotaDatabase, ServiceConfig } from "./types.ts";
 
@@ -214,7 +215,6 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
     const ids = parsed.history.flatMap((message) => message.sourceIds ?? []).slice(-PRIOR_SOURCE_LIMIT);
     evidence = listChunksByIds(readyBundle.chunks, ids).slice(0, PRIOR_SOURCE_LIMIT).map((chunk) => ({ ...chunk, score: 1 }));
   }
-  const sources = createSourceList(evidence);
   const messages = evidence.length > 0
     ? createPrompt({
       question: parsed.question,
@@ -241,17 +241,24 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
           return;
         }
         let produced = "";
+        const citations = createCitationSplitter();
+        const emit = (part: string) => {
+          const text = part.slice(0, MAX_OUTPUT_CHARS - produced.length);
+          if (!text) return false;
+          produced += text;
+          send("token", { text });
+          return produced.length < MAX_OUTPUT_CHARS;
+        };
         for await (const part of chatAdapter.createChatStream(messages, signal)) {
           if (request.signal.aborted) return;
           if (!part) continue;
-          const text = part.slice(0, MAX_OUTPUT_CHARS - produced.length);
-          if (!text) break;
-          produced += text;
-          send("token", { text });
-          if (produced.length >= MAX_OUTPUT_CHARS) break;
+          const visible = citations.push(part);
+          if (visible && !emit(visible)) break;
         }
         if (request.signal.aborted) return;
-        send("sources", { sources });
+        const cited = citations.finish();
+        if (cited.text) emit(cited.text);
+        send("sources", { sources: sourcesFromCitations(evidence, cited.citedIds) });
         send("done", {});
       } catch (error) {
         if (request.signal.aborted || closed) return;
