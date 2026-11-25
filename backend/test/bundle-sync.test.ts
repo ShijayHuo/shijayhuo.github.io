@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createKnowledgeBundle } from "../src/bundle.ts";
+import { embeddingRevision } from "../src/embedding-space.ts";
 import { createMockEmbedding } from "../src/mock-adapter.ts";
 import { removeChunksWithDocument } from "../src/knowledge.ts";
 import { listPublishedPosts } from "../src/publish.ts";
@@ -13,6 +14,9 @@ function counting(inner: EmbeddingAdapter): EmbeddingAdapter & { calls: number }
     provider: inner.provider,
     model: inner.model,
     dimensions: inner.dimensions,
+    baseURL: inner.baseURL,
+    encodingFormat: inner.encodingFormat,
+    revision: inner.revision,
     get calls() {
       return state.calls;
     },
@@ -20,6 +24,12 @@ function counting(inner: EmbeddingAdapter): EmbeddingAdapter & { calls: number }
       state.calls += 1;
       return inner.createEmbedding(input, signal);
     },
+    ...(inner.createEmbeddings ? {
+      async createEmbeddings(inputs: string[], signal?: AbortSignal) {
+        state.calls += inputs.length;
+        return inner.createEmbeddings!(inputs, signal);
+      },
+    } : {}),
   };
 }
 
@@ -56,6 +66,7 @@ test("增删改只重嵌变化的切片，换模型则全部重嵌", async () =>
 
   const renamed = createMockEmbedding();
   renamed.model = "mock-embedding-v2";
+  renamed.revision = embeddingRevision(renamed.model, renamed.dimensions);
   const renamedCounter = counting(renamed);
   const fifth = await createKnowledgeBundle({ documents: removed, embedding: renamedCounter, cache: fourth.cache, now });
   assert.equal(renamedCounter.calls, fifth.bundle.chunks.length);

@@ -1,15 +1,19 @@
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createChunks } from "./chunk.ts";
+import { planEmbeddingBatches, type EmbeddingBatchLimits } from "./embedding-batch.ts";
 import { createKnowledgeVersion, sha256Hex, validateVector, verifyKnowledgeBundle } from "./knowledge.ts";
 import { CHUNKER_VERSION } from "./limits.ts";
-import type { EmbeddingAdapter, EmbeddingCache, KnowledgeBundle, PublishedDocument } from "./types.ts";
+import type { Chunk, EmbeddingAdapter, EmbeddingCache, KnowledgeBundle, PublishedDocument } from "./types.ts";
 
 export async function createEmbeddingConfigHash(embedding: EmbeddingAdapter): Promise<string> {
   return sha256Hex(JSON.stringify({
     provider: embedding.provider,
     model: embedding.model,
     dimensions: embedding.dimensions,
+    baseURL: embedding.baseURL,
+    encodingFormat: embedding.encodingFormat,
+    revision: embedding.revision,
     chunkerVersion: CHUNKER_VERSION,
     inputTemplate: "text",
     queryPrefix: "",
@@ -25,30 +29,50 @@ export async function createKnowledgeBundle(options: {
   now?: Date;
   signal?: AbortSignal;
   onCache?: (cache: EmbeddingCache) => void;
+  batchLimits?: EmbeddingBatchLimits;
 }): Promise<{ bundle: KnowledgeBundle; embedded: number; reused: number; cache: EmbeddingCache }> {
   const configHash = await createEmbeddingConfigHash(options.embedding);
   const entries = options.cache && options.cache.configHash === configHash ? { ...options.cache.entries } : {};
   let embedded = 0;
   let reused = 0;
-  const chunks = [];
+  const ordered: Array<Chunk | null> = [];
+  const pending: Array<{ slot: number; text: string; contentHash: string; chunk: Omit<Chunk, "vector"> }> = [];
   for (const document of options.documents) {
     for (const chunk of await createChunks(document)) {
+      const slot = ordered.length;
+      ordered.push(null);
       const cached = entries[chunk.contentHash];
       const cachedError = cached ? validateVector(cached, options.embedding.dimensions) : "missing";
       if (cached && !cachedError) {
-        chunks.push({ ...chunk, vector: cached });
+        ordered[slot] = { ...chunk, vector: cached };
         reused += 1;
         continue;
       }
-      const vector = await options.embedding.createEmbedding(chunk.text, options.signal);
-      const vectorError = validateVector(vector, options.embedding.dimensions);
-      if (vectorError) throw new Error(vectorError);
-      entries[chunk.contentHash] = vector;
-      chunks.push({ ...chunk, vector });
-      embedded += 1;
-      options.onCache?.({ configHash, entries: { ...entries } });
+      pending.push({ slot, text: chunk.text, contentHash: chunk.contentHash, chunk });
     }
   }
+  const plans = pending.length > 0 ? planEmbeddingBatches(pending.map((item) => item.text), options.batchLimits) : [];
+  for (const plan of plans) {
+    const group = plan.indexes.map((index) => pending[index]).filter((item) => item !== undefined);
+    if (group.length !== plan.indexes.length) throw new Error("批次不完整，已停止，没有替换知识包。");
+    const vectors = options.embedding.createEmbeddings
+      ? await options.embedding.createEmbeddings(group.map((item) => item.text), options.signal)
+      : await Promise.all(group.map((item) => options.embedding.createEmbedding(item.text, options.signal)));
+    if (vectors.length !== group.length) throw new Error("批次条数不一致，已停止，没有替换知识包。");
+    for (let index = 0; index < group.length; index += 1) {
+      const vector = vectors[index];
+      const vectorError = vector ? validateVector(vector, options.embedding.dimensions) : "向量为空。";
+      if (vectorError || !vector) throw new Error(vectorError ?? "向量为空。");
+      const item = group[index];
+      if (!item) throw new Error("批次不完整，已停止，没有替换知识包。");
+      entries[item.contentHash] = vector;
+      ordered[item.slot] = { ...item.chunk, vector };
+      embedded += 1;
+    }
+    options.onCache?.({ configHash, entries: { ...entries } });
+  }
+  if (ordered.some((item) => item === null)) throw new Error("知识包不完整，已停止，没有替换知识包。");
+  const chunks = ordered as Chunk[];
   const bundle: KnowledgeBundle = {
     manifest: {
       knowledgeVersion: "pending",
@@ -58,7 +82,9 @@ export async function createKnowledgeBundle(options: {
         provider: options.embedding.provider,
         model: options.embedding.model,
         dimensions: options.embedding.dimensions,
-        revision: `${options.embedding.model}:${options.embedding.dimensions}`,
+        revision: options.embedding.revision,
+        baseURL: options.embedding.baseURL,
+        encodingFormat: options.embedding.encodingFormat,
         inputTemplate: "text",
         queryPrefix: "",
         documentPrefix: "",

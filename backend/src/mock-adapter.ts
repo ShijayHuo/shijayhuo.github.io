@@ -1,3 +1,4 @@
+import { embeddingRevision } from "./embedding-space.ts";
 import { MOCK_DIMENSIONS } from "./limits.ts";
 import type { ChatAdapter, EmbeddingAdapter } from "./types.ts";
 
@@ -24,6 +25,9 @@ export function createMockEmbedding(dimensions = MOCK_DIMENSIONS): EmbeddingAdap
     provider: "mock",
     model: "mock-embedding-v1",
     dimensions,
+    baseURL: "",
+    encodingFormat: "float",
+    revision: embeddingRevision("mock-embedding-v1", dimensions),
     async createEmbedding(input, signal) {
       if (signal?.aborted) throw new DOMException("aborted", "AbortError");
       return hashEmbedding(input, dimensions);

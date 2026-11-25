@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { createAnswer } from "../src/handler.ts";
 import { MSG } from "../src/limits.ts";
 import { SYSTEM_RULES } from "../src/prompt.ts";
-import { findOneQuotaByKey } from "../src/quota.ts";
+import { createQuotaKey, findOneQuotaByKey } from "../src/quota.ts";
 import type { ChatAdapter, ChatMessage } from "../src/types.ts";
 import {
   askEnv,
@@ -347,6 +347,24 @@ test("方法、路径和过大的正文使用锁定文案", async () => {
   }), askEnv(), { bundle, database });
   assert.equal(huge.status, 413);
   assert.equal((await huge.json() as { message: string }).message, MSG.tooLarge);
+});
+
+test("真实 embedding 配置不能查询哈希知识包，也不占用额度", async () => {
+  const database = createSqliteQuotaDatabase();
+  const embedding = fixedEmbedding([1, 0, 0]);
+  const response = await createAnswer(
+    askRequest(readFixture("request-first.json")),
+    askEnv({
+      EMBEDDING_API_KEY: "sk-test-secret",
+      EMBEDDING_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      EMBEDDING_MODEL: "qwen3.7-text-embedding-flash",
+      EMBEDDING_DIMENSIONS: "1024",
+    }),
+    { bundle: await aboutBundle(), database, embedding, chat: fixedChat(["不会出现"]) },
+  );
+  assert.equal(response.status, 503);
+  assert.equal(embedding.calls.length, 0);
+  assert.equal(await findOneQuotaByKey(database, await createQuotaKey("203.0.113.10", "test-hmac")), null);
 });
 
 test("允许的预检不占用额度", async () => {

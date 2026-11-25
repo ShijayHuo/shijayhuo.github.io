@@ -30,10 +30,36 @@ test("没有密钥时构建失败，也不会把 mock 写进 Worker 模块", () 
   const out = path.join(mkdtempSync(path.join(tmpdir(), "ask-build-")), "bundle.json");
   const missing = run(["--root", blogFixture, "--out", out]);
   assert.notEqual(missing.status, 0);
-  assert.match(missing.stderr, /没有写入/);
+  assert.match(missing.stderr, /没有替换/);
   const blocked = run(["--mock", "--out", stub, "--root", blogFixture]);
   assert.notEqual(blocked.status, 0);
   assert.match(readFileSync(stub, "utf8"), /bundledKnowledge: KnowledgeBundle \| null = null/);
+});
+
+test("验证构建拒绝 v4 和 mock，并且不打印密钥", () => {
+  const secret = "sk-box-secret-do-not-print";
+  const out = path.join(mkdtempSync(path.join(tmpdir(), "ask-v4-")), "bundle.json");
+  const rejected = spawnSync(process.execPath, ["--experimental-strip-types", "scripts/build-knowledge.ts", "--validation", "--root", blogFixture, "--out", out], {
+    cwd: backendRoot,
+    env: {
+      ...cleanEnv(),
+      EMBEDDING_API_KEY: secret,
+      EMBEDDING_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      EMBEDDING_MODEL: "text-embedding-v4",
+      EMBEDDING_DIMENSIONS: "1024",
+    } as NodeJS.ProcessEnv,
+    encoding: "utf8",
+  });
+  assert.notEqual(rejected.status, 0);
+  assert.match(rejected.stderr, /text-embedding-v4/);
+  assert.equal(`${rejected.stdout}${rejected.stderr}`.includes(secret), false);
+  const mockMix = spawnSync(process.execPath, ["--experimental-strip-types", "scripts/build-knowledge.ts", "--validation", "--mock"], {
+    cwd: backendRoot,
+    env: cleanEnv(),
+    encoding: "utf8",
+  });
+  assert.notEqual(mockMix.status, 0);
+  assert.match(mockMix.stderr, /mock/);
 });
 
 test("mock 构建能写出可校验的知识包，并声明它不是生产检索", () => {

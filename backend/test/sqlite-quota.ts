@@ -1,11 +1,9 @@
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { QuotaDatabase } from "../src/types.ts";
 
-export function createSqliteQuotaDatabase(): QuotaDatabase {
-  const db = new DatabaseSync(":memory:");
-  db.exec(readFileSync(path.join(import.meta.dirname, "../migrations/0001_quota.sql"), "utf8"));
+function wrap(db: DatabaseSync): QuotaDatabase {
   return {
     prepare(sql: string) {
       return {
@@ -25,4 +23,21 @@ export function createSqliteQuotaDatabase(): QuotaDatabase {
       };
     },
   };
+}
+
+function migrationSql(): string {
+  return readFileSync(path.join(import.meta.dirname, "../migrations/0001_quota.sql"), "utf8");
+}
+
+export function createSqliteQuotaDatabase(): QuotaDatabase {
+  const db = new DatabaseSync(":memory:");
+  db.exec(migrationSql());
+  return wrap(db);
+}
+
+export function createFileQuotaDatabase(file: string): QuotaDatabase {
+  mkdirSync(path.dirname(file), { recursive: true });
+  const db = new DatabaseSync(file);
+  db.exec(migrationSql());
+  return wrap(db);
 }

@@ -37,22 +37,29 @@ node --experimental-strip-types scripts/build-knowledge.ts --mock --root .. --ou
 
 ## 真实构建
 
-在 shell 里提供下面四项，不要写进仓库：
+当前验证用的 embedding 是百炼北京兼容接口上的 `qwen3.7-text-embedding-flash`，1024 维 float。这不是 rerank，也不是 `text-embedding-v4`。适配器仍走通用 OpenAI 字段：`model`、`input`、`dimensions`、`encoding_format=float`。批次保守为最多 10 条、单条 8192 tokens、整批 33000 tokens，不因为 flash 官方可以 20 条而放宽，这样同一套构建器也不会把 v4 打超限。
 
-- `EMBEDDING_API_KEY`
-- `EMBEDDING_BASE_URL`，例如兼容端点的 `https://host/v1`。官方 OpenAI 也要显式写成 `https://api.openai.com/v1`，代码不会代填。
-- `EMBEDDING_MODEL`
-- `EMBEDDING_DIMENSIONS`
+在 shell 里提供密钥，不要写进仓库，也不要出现在日志里：
 
-然后：
+- `EMBEDDING_API_KEY`。box 上可以由进程映射 `BAILIAN_EMBEDDING_API_KEY`，脚本不会打印它。
+- `EMBEDDING_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1`
+- `EMBEDDING_MODEL=qwen3.7-text-embedding-flash`
+- `EMBEDDING_DIMENSIONS=1024`
 
 ```bash
-node --experimental-strip-types scripts/build-knowledge.ts --out src/generated/knowledge.ts
+node --experimental-strip-types scripts/build-knowledge.ts --validation \
+  --out dist/knowledge/bundle.json
 ```
 
-生成和 embedding 各用各的地址、模型和密钥。请求是 Chat Completions 流式和 Embeddings，`max_tokens` 800，不自动重试。适配器在 `src/openai-adapter.ts`，可以换成官方 SDK，只要保留 `createEmbedding` 和 `createChatStream`。
+`--validation` 在地址、模型或维度未设置时才填上面的默认值，并拒绝 v4、512 维、rerank 和 mock。真实向量默认进 `backend/dist/knowledge/bundle.json`，不进 Git。写入 `src/generated/knowledge.ts` 必须再加 `--write-worker-module`。失败不替换已有知识包。
 
-缓存写在 `backend/.cache/embeddings.json`，已忽略。相同模型、维度和切片规则下，未改动的段落会复用向量。模型、维度或切片规则变化会整库重嵌。删除或撤稿的文章不会留在新包里。写入前会做版本校验；校验失败不替换旧文件。
+构建和查询必须是同一套地址、模型、维度和版本。哈希索引、v4 索引和 flash 索引不能混用。缓存键包含这些字段，写在已忽略的 `backend/.cache/embeddings.json`。可重试的是 408、429 和 5xx，最多 3 次；400 和取消不重试。成功的一批才会写入缓存。
+
+对话验证模型是 `deepseek-v4.1-flash`，同一北京 base URL。账号流式探测尚未确认，不能写成已通过。请求只带 `model`、`messages`、`max_tokens`、`stream`，不开启 `enable_thinking` 或 `reasoning_effort`。响应里的 `reasoning_content` 会被丢弃，不进入 `token`，也不拼进最终正文。生成流不做重试，避免把已经发出的增量再拼一遍。
+
+`0.25` 仍是代码里的起步门限，不是已校准阈值。四句探针里无关余弦约 0.308，相关约 0.427 和 0.391。无关句已经高于 0.25。全量博客评测要另做召回和无依据负例，不能为了通过把阈值调低。`scripts/eval-recall.ts` 拒绝 `--min-score`，报告里的 `recallAccepted` 固定为 false。
+
+box 的映射、端口、pid 和额度文件见 `backend/BOX.md`。
 
 ## D1
 
@@ -90,14 +97,11 @@ npx wrangler d1 migrations apply ajie-ask-quota --remote
 
 页面要带 `Origin`。未设置 `ASK_ALLOWED_ORIGINS` 时只允许 `https://shijayhuo.github.io`。空字符串和 `*` 不允许任何来源。CORS 不是认证。
 
-可信 IP 只读 `CF-Connecting-IP`。本地 `scripts/serve-local.ts` 会替浏览器写这个头，前端不要发送 `x-ask-dev-ip`。
+可信 IP 只读 `CF-Connecting-IP`。本地包装器会替浏览器写这个头，前端不要发送 `x-ask-dev-ip`。
 
-```bash
-ASK_ALLOW_MOCK=1 QUOTA_HMAC_KEY=local-only ASK_BUNDLE_FILE=dist/mock-bundle.json \
-  node --experimental-strip-types scripts/serve-local.ts
-```
+只看协议时仍可用 mock 包和 `scripts/serve-local.ts`。那不是语义召回。真实向量和真实对话用 `scripts/serve-validation.ts`，见 `backend/BOX.md`。它默认同时要求 flash embedding 和 `deepseek-v4.1-flash`。只测检索时要显式加 `--mock-chat`，并且 `ASK_ALLOW_MOCK` 仍是 `0`，哈希知识包不能冒充真包。
 
-然后把页面的接口地址指到 `http://127.0.0.1:8787`。这个进程不是生产部署。mock 包只能看协议，不能看召回质量。真实联调改用真实知识包，并设置生成和 embedding 变量，同时不要打开 `ASK_ALLOW_MOCK`。
+验证进程只听 `127.0.0.1:8787`。额度在 `backend/dist/validation/quota.sqlite`。启动不会删除或清零这张表；停止只发 `SIGTERM` 并删除 pid 文件。更换 `QUOTA_HMAC_KEY` 会让旧计数对不上，不要在重启时轮换。
 
 ## 发布顺序
 
@@ -109,6 +113,7 @@ ASK_ALLOW_MOCK=1 QUOTA_HMAC_KEY=local-only ASK_BUNDLE_FILE=dist/mock-bundle.json
 
 ## 还没有验收的部分
 
-- 没有真实模型，也没有对 `backend/eval/questions.json` 做语义召回打分。
+- 没有在这台机器上调用百炼。`qwen3.7-text-embedding-flash` 和 `deepseek-v4.1-flash` 的真实小请求要由 box 执行。对话流式探测未确认前不能写成已通过。
+- `0.25` 不是有效阈值。全量博客的召回和无依据负例还没校准。
 - 没有创建 D1，没有部署 Worker。
-- Worker 的 CPU 和内存只在 Cloudflare 上才测得到。`npm test` 会打印脚本字节数、gzip 字节数，以及 mock 知识包的切片数和 JSON 体积。那不是生产向量的体积。真实维度未配置时，不能把 `切片数 × 维度 × 4` 说成已测容量。
+- Worker 的 CPU 和内存只在 Cloudflare 上才测得到。`npm test` 会打印脚本字节数、gzip 字节数，以及 mock 知识包的切片数和 JSON 体积。那不是 1024 维真实向量的体积。

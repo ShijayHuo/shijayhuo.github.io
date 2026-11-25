@@ -1,3 +1,4 @@
+import { embeddingSpaceError, publicEmbeddingBaseURL } from "./embedding-space.ts";
 import { verifyKnowledgeBundle, listChunksByIds } from "./knowledge.ts";
 import {
   DEFAULT_MIN_SCORE,
@@ -48,18 +49,11 @@ export function listAllowedOrigins(env: AskBindings): string[] {
 
 export function readServiceConfig(env: AskBindings, prefix: "EMBEDDING" | "CHAT"): ServiceConfig | null {
   const apiKey = env[`${prefix}_API_KEY`]?.trim() ?? "";
-  const baseURL = env[`${prefix}_BASE_URL`]?.trim() ?? "";
   const model = env[`${prefix}_MODEL`]?.trim() ?? "";
+  const baseURL = publicEmbeddingBaseURL(env[`${prefix}_BASE_URL`] ?? "");
   if (!apiKey || !baseURL || !model) return null;
-  let url: URL;
-  try {
-    url = new URL(baseURL);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== "https:" && url.protocol !== "http:") return null;
-  const config: ServiceConfig = { apiKey, baseURL: baseURL.replace(/\/$/, ""), model };
-  if (prefix === "EMBEDDING" && env.EMBEDDING_DIMENSIONS?.trim()) {
+  const config: ServiceConfig = { apiKey, baseURL, model };
+  if (prefix === "EMBEDDING") {
     const dimensions = Number(env.EMBEDDING_DIMENSIONS);
     if (!Number.isInteger(dimensions) || dimensions <= 0) return null;
     config.dimensions = dimensions;
@@ -175,14 +169,7 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
   if (!embedding || !chat) return finish(json(503, { error: "unavailable", message: MSG.unavailable }, cors), "unavailable");
   const embeddingAdapter = embedding;
   const chatAdapter = chat;
-  if (
-    embedding.provider !== readyBundle.manifest.embedding.provider ||
-    embedding.model !== readyBundle.manifest.embedding.model ||
-    (embedding.dimensions !== 0 && embedding.dimensions !== readyBundle.manifest.embedding.dimensions)
-  ) {
-    return finish(json(503, { error: "unavailable", message: MSG.unavailable }, cors), "unavailable");
-  }
-  if (embeddingConfig?.dimensions && embeddingConfig.dimensions !== readyBundle.manifest.embedding.dimensions) {
+  if (embeddingSpaceError(embeddingAdapter, readyBundle.manifest.embedding, embeddingConfig)) {
     return finish(json(503, { error: "unavailable", message: MSG.unavailable }, cors), "unavailable");
   }
 

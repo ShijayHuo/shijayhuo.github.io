@@ -28,6 +28,8 @@ export interface EmbeddingManifest {
   model: string;
   dimensions: number;
   revision: string;
+  baseURL: string;
+  encodingFormat: "float";
   inputTemplate: "text";
   queryPrefix: string;
   documentPrefix: string;
@@ -52,7 +54,11 @@ export interface EmbeddingAdapter {
   provider: string;
   model: string;
   dimensions: number;
+  baseURL: string;
+  encodingFormat: "float";
+  revision: string;
   createEmbedding(input: string, signal?: AbortSignal): Promise<number[]>;
+  createEmbeddings?(inputs: string[], signal?: AbortSignal): Promise<number[][]>;
 }
 
 export interface ChatMessage {

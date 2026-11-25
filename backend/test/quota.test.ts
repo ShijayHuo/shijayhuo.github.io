@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { test } from "node:test";
 import { FIND_QUOTA_SQL, INSERT_QUOTA_SQL, createQuotaKey, readTrustedIp, updateQuotaByKey } from "../src/quota.ts";
-import { createSqliteQuotaDatabase } from "./sqlite-quota.ts";
+import { createFileQuotaDatabase, createSqliteQuotaDatabase } from "./sqlite-quota.ts";
 
 test("额度 SQL 在第二十一次不再增加", async () => {
   assert.match(INSERT_QUOTA_SQL, /ON CONFLICT\(key\) DO UPDATE/);
@@ -44,4 +47,16 @@ test("只信任 CF-Connecting-IP，开发头必须显式打开", () => {
     headers: { "cf-connecting-ip": "203.0.113.10", "x-ask-dev-ip": "198.51.100.8" },
   });
   assert.equal(readTrustedIp(both, { ASK_ALLOW_DEV_IP: "1" }), "203.0.113.10");
+});
+
+test("文件额度库重启后保留次数，迁移语句不清零", async () => {
+  const sql = readFileSync(path.join(import.meta.dirname, "../migrations/0001_quota.sql"), "utf8");
+  const executable = sql.split("\n").filter((line) => !line.trim().startsWith("--")).join("\n");
+  assert.equal(/\bDROP\b|\bDELETE\b/i.test(executable), false);
+  const file = path.join(mkdtempSync(path.join(tmpdir(), "ask-quota-")), "quota.sqlite");
+  const first = createFileQuotaDatabase(file);
+  for (let index = 0; index < 7; index += 1) await updateQuotaByKey(first, "same-key", index);
+  const second = createFileQuotaDatabase(file);
+  const row = await second.prepare("SELECT used FROM quota WHERE key = ?1").bind("same-key").first<{ used: number }>();
+  assert.equal(row?.used, 7);
 });
