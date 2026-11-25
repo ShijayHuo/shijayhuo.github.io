@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, unlinkSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { QuotaDatabase } from "../src/types.ts";
@@ -62,7 +62,13 @@ export function readQuotaSummary(file: string): QuotaSummary {
 
 export function backupQuotaFile(file: string, stamp: string): string {
   const dest = `${file}.bak-${stamp}`;
-  copyFileSync(file, dest);
+  if (existsSync(dest)) unlinkSync(dest);
+  const db = new DatabaseSync(file);
+  try {
+    db.exec(`VACUUM INTO '${dest.replaceAll("'", "''")}'`);
+  } finally {
+    db.close();
+  }
   return dest;
 }
 

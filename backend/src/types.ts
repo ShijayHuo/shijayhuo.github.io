@@ -101,6 +101,7 @@ export interface AskBindings {
   QUOTA_HMAC_KEY?: string;
   ASK_ALLOW_DEV_IP?: string;
   ASK_ALLOW_MOCK?: string;
+  ASK_REQUIRE_STRONG_HMAC?: string;
   ASK_ALLOWED_ORIGINS?: string;
   ASK_MIN_SCORE?: string;
   EMBEDDING_API_KEY?: string;
