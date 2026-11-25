@@ -177,8 +177,8 @@ try {
       const visual = parseFloat(getComputedStyle(el, "::before").width);
       return { hit, visual };
     });
-    assert(buttonSize.hit >= 43, "可点区域小于 44px: " + buttonSize.hit);
-    assert(buttonSize.visual > 30 && buttonSize.visual < buttonSize.hit - 4, "视觉按钮没有缩小: " + buttonSize.visual);
+    assert(Math.abs(buttonSize.hit - 44) < 0.6, "可点区域不是 44px: " + buttonSize.hit);
+    assert(Math.abs(buttonSize.visual - 24) < 0.6, "可见直径不是 24px: " + buttonSize.visual);
     const before = await page.locator("#ask-input").evaluate((el) => el.getBoundingClientRect().height);
     await page.locator("#ask-input").press("Enter");
     assert((await page.locator("#ask-hero-hint").innerText()).includes("请输入内容后再发送"), "空白提示");
