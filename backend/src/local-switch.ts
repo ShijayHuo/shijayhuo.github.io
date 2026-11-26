@@ -144,11 +144,18 @@ export function orphanWorkerPid(input: {
 }
 
 export const ASK_API_ASSIGNMENT = 'document.documentElement.dataset.askApi = ""';
+const PRODUCTION_ASK_ASSIGNMENT = 'document.documentElement.dataset.askApi = "https://ajie-ask.aaaaaajie666.workers.dev/ask"';
 
 export function rewriteAskApi(html: string, origin = "http://127.0.0.1:8787"): { html: string; rewritten: boolean } {
-  if (!html.includes(ASK_API_ASSIGNMENT)) return { html, rewritten: false };
   const next = `document.documentElement.dataset.askApi = ${JSON.stringify(origin)}`;
-  return { html: html.split(ASK_API_ASSIGNMENT).join(next), rewritten: true };
+  let output = html;
+  let rewritten = false;
+  for (const pattern of [ASK_API_ASSIGNMENT, PRODUCTION_ASK_ASSIGNMENT]) {
+    if (!output.includes(pattern)) continue;
+    output = output.split(pattern).join(next);
+    rewritten = true;
+  }
+  return { html: output, rewritten };
 }
 
 export function resolveSiteFile(root: string, urlPath: string): string | null {

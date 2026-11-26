@@ -75,6 +75,21 @@ test("非流式契约错误与样例文案一致，且不占用额度", async ()
   assert.equal(await findOneQuotaByKey(database, "unused"), null);
 });
 
+test("生产要求强 HMAC 时拒绝 local-only，且不占用额度", async () => {
+  const bundle = await aboutBundle();
+  const database = createSqliteQuotaDatabase();
+  const embedding = fixedEmbedding([1, 0, 0]);
+  const response = await createAnswer(
+    askRequest(readFixture("request-first.json")),
+    askEnv({ ASK_REQUIRE_STRONG_HMAC: "1", QUOTA_HMAC_KEY: "local-only" }),
+    { bundle, database, embedding, chat: fixedChat(["不会出现"]) },
+  );
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), readJsonFixture("http-503.json"));
+  assert.equal(embedding.calls.length, 0);
+  assert.equal(await findOneQuotaByKey(database, "unused"), null);
+});
+
 test("mock 知识包在未显式允许时不会回答", async () => {
   const bundle = await aboutBundle();
   const embedding = fixedEmbedding([1, 0, 0]);

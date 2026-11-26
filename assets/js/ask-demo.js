@@ -1,13 +1,15 @@
-/* Ajie's 思源地 ask demo.
-   Interactive prototype only: scripted replies, no model and no retrieval.
-   Questions stay in sessionStorage. The URL never receives the question text. */
+/* Ajie's 思源地 ask UI.
+   Reads ask.demo and ask.api_url. Demo uses the prewritten replies.
+   Unconfigured production does not invent an answer.
+   Mock and fetch share this UI. Questions never go in the URL. */
 (function () {
   "use strict";
 
   var STORE_KEY = "ajie-ask-demo-v1";
   var PENDING_KEY = "ajie-ask-pending";
   var CLEAR_HOME_KEY = "ajie-ask-clear-home";
-  var DISCLAIMER = "交互原型，回答为演示内容，未接入真实问答";
+  var SCENARIO_KEY = "ajie-ask-mock-scenario";
+  var REMAINING_PREFIX = "ajie-ask-remaining-";
 
   var runtime = document.body.getAttribute("data-ask-runtime") || "site";
   var active = null;
@@ -15,7 +17,7 @@
   var followAnswer = true;
   var scrollLock = 0;
 
-  var INTENTS = [
+    var INTENTS = [
     {
       id: "who",
       label: "你是谁",
@@ -183,12 +185,131 @@
   ];
 
   var CONTINUATIONS = ["继续", "展开说说", "展开", "再说详细点", "详细一点", "多说一点", "然后呢", "继续说", "再讲讲"];
+  var MOCK_SCENARIOS = [
+    { id: "normal", label: "正常" },
+    { id: "stop", label: "停止" },
+    { id: "quota", label: "429" },
+    { id: "unconfigured", label: "未配置" },
+    { id: "failure", label: "流式失败" },
+    { id: "upstream", label: "检索失败" },
+    { id: "forbidden", label: "来源被拒" },
+    { id: "refusal", label: "依据不足" },
+    { id: "network", label: "网络异常" }
+  ];
+
+  function api() {
+    return window.AskProtocol || null;
+  }
+
+  function textOf(name) {
+    var pack = api();
+    if (!pack) {
+      if (name === "unconfigured") return "问答服务尚未配置。";
+      if (name === "network") return "网络异常，这次没有收到完整回答。";
+      if (name === "stopped") return "已停止";
+      if (name === "timeout") return "回答超时，已停止等待。";
+      return "";
+    }
+    return pack.TEXT[name] || "";
+  }
+
+  function currentMode() {
+    var data = {
+      askDemo: document.documentElement.dataset.askDemo,
+      askApi: document.documentElement.dataset.askApi,
+      askTransport: document.documentElement.dataset.askTransport,
+      search: location.search
+    };
+    var pack = api();
+    if (!pack) {
+      if (data.askDemo === "true") return "demo";
+      if (data.askTransport === "mock" || /(?:^|[?&])ask-mock(?:=|&|$)/.test(location.search)) return "mock";
+      return "unconfigured";
+    }
+    return pack.resolveMode(data);
+  }
+
+  function normalizeScenario(value) {
+    if (value === "hang") return "hang";
+    var found = false;
+    MOCK_SCENARIOS.forEach(function (item) {
+      if (item.id === value) found = true;
+    });
+    return found ? value : "normal";
+  }
+
+function selectedScenario() {
+  var pack = api();
+  var fromQuery = pack ? pack.readMockScenario(location.search) : "";
+  if (fromQuery) return normalizeScenario(fromQuery);
+  var select = document.getElementById("ask-mock-scenario");
+  if (select && select.value) return normalizeScenario(select.value);
+    try {
+      var stored = sessionStorage.getItem(SCENARIO_KEY);
+      if (stored) return normalizeScenario(stored);
+    } catch (error) {
+      return "normal";
+    }
+    return "normal";
+  }
+
+  function rememberScenario(value) {
+    var scenario = normalizeScenario(value);
+    try {
+      sessionStorage.setItem(SCENARIO_KEY, scenario);
+    } catch (error) {
+      scenario = scenario;
+    }
+    if (runtime === "file" || currentMode() !== "mock") return;
+    var url = new URL(location.href);
+    url.searchParams.set("ask-mock", scenario);
+    history.replaceState(history.state, "", url.pathname + url.search);
+  }
+
+  function remainingKey() {
+    var mode = currentMode();
+    if (mode !== "mock" && mode !== "api") return "";
+    return REMAINING_PREFIX + mode;
+  }
+
+  function loadRemaining() {
+    var key = remainingKey();
+    if (!key) return null;
+    try {
+      var data = JSON.parse(sessionStorage.getItem(key) || "null");
+      if (!data || typeof data.remaining !== "number") return null;
+      return data.remaining;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function saveRemaining(value) {
+    var key = remainingKey();
+    if (!key || typeof value !== "number") return;
+    try {
+      sessionStorage.setItem(key, JSON.stringify({ remaining: value }));
+    } catch (error) {
+      return;
+    }
+  }
+
+  function updateRemaining(value) {
+    var el = document.getElementById("ask-remaining");
+    if (!el) return;
+    var pack = api();
+    var label = pack && typeof value === "number" ? pack.remainingLabel(value) : "";
+    if (!label || (currentMode() !== "mock" && currentMode() !== "api")) {
+      el.hidden = true;
+      el.textContent = "";
+      return;
+    }
+    el.hidden = false;
+    el.textContent = label;
+  }
 
   function norm(value) {
-    return String(value || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "");
+    return String(value || "").trim().toLowerCase().replace(/\s+/g, "");
   }
 
   function nid(prefix) {
@@ -208,16 +329,18 @@
   function saveStore(store) {
     var ids = Object.keys(store.sessions);
     if (ids.length > 10) {
-      ids
-        .sort(function (a, b) {
-          return (store.sessions[a].updatedAt || 0) - (store.sessions[b].updatedAt || 0);
-        })
-        .slice(0, ids.length - 10)
-        .forEach(function (id) {
-          delete store.sessions[id];
-        });
+      ids.sort(function (a, b) {
+        return (store.sessions[a].updatedAt || 0) - (store.sessions[b].updatedAt || 0);
+      }).slice(0, ids.length - 10).forEach(function (id) {
+        delete store.sessions[id];
+      });
     }
     sessionStorage.setItem(STORE_KEY, JSON.stringify(store));
+  }
+
+  function findOneSession(id) {
+    if (!id) return null;
+    return loadStore().sessions[id] || null;
   }
 
   function hrefFor(path) {
@@ -230,7 +353,11 @@
   function askPageUrl() {
     var hero = document.getElementById("ask-hero");
     var app = document.getElementById("ask-app");
-    return (hero && hero.getAttribute("data-ask-url")) || (app && app.getAttribute("data-ask-url")) || "/ask/";
+    var url = (hero && hero.getAttribute("data-ask-url")) || (app && app.getAttribute("data-ask-url")) || "/ask/";
+    if (runtime === "file" || currentMode() !== "mock") return url;
+    var parsed = new URL(url, location.origin);
+    parsed.searchParams.set("ask-mock", selectedScenario());
+    return parsed.pathname + parsed.search;
   }
 
   function shanghaiHour() {
@@ -244,7 +371,9 @@
   }
 
   function greetingText() {
+    var pack = api();
     var hour = shanghaiHour();
+    if (pack) return pack.greetingForHour(hour);
     if (hour >= 5 && hour < 12) return "上午好";
     if (hour >= 12 && hour < 18) return "下午好";
     return "晚上好";
@@ -268,7 +397,7 @@
   function resolveSessionId() {
     var store = loadStore();
     var stateId = history.state && history.state.askSessionId;
-    if (stateId) return stateId;
+    if (stateId && store.sessions[stateId]) return stateId;
     if (runtime === "file") return null;
     var pending = sessionStorage.getItem(PENDING_KEY);
     if (pending && store.sessions[pending]) {
@@ -350,15 +479,11 @@
 
   function composeAnswer(text, session) {
     if (isGreeting(text)) {
-      var hello = INTENTS.filter(function (intent) {
-        return intent.id === "hello";
-      })[0];
+      var hello = INTENTS.filter(function (intent) { return intent.id === "hello"; })[0];
       return { intent: hello.id, label: hello.label, sources: hello.sources, text: hello.text };
     }
     var intent = bestIntent(text);
-    if (intent) {
-      return { intent: intent.id, label: intent.label, sources: intent.sources, text: intent.text };
-    }
+    if (intent) return { intent: intent.id, label: intent.label, sources: intent.sources, text: intent.text };
     if (isContinuation(text)) {
       var previous = previousAssistant(session);
       if (!previous) {
@@ -374,12 +499,7 @@
         intent: "continue",
         label: "继续",
         sources: previous.sources || [],
-        text:
-          "演示稿里「" +
-          (previous.label || "上一个问题") +
-          "」只准备了一段回答，没有第二段隐藏内容。要看展开，直接打开《" +
-          title +
-          "》。这次仍然不是实时检索。"
+        text: "演示稿里「" + (previous.label || "上一个问题") + "」只准备了一段回答，没有第二段隐藏内容。要看展开，直接打开《" + title + "》。这次仍然不是实时检索。"
       };
     }
     return {
@@ -390,8 +510,7 @@
         { title: "这个时代到底需要什么样的开发者？", url: "/posts/developers-in-the-ai-era/" },
         { title: "漫谈架构师", url: "/posts/talking-about-architects/" }
       ],
-      text:
-        "这句话没有对应的演示稿。这个页面不会去检索博客，也没有接入模型，所以不会编一段像实时回答的内容，也不会补充作者没有公开写过的经历或数字。\n\n如果只是想从博客里接着看，下面三篇都是已经发布的文章。也可以换一个更接近现有文章的问法，比如「你是谁」「AI 味儿」「架构师」「西蒙学习法」。"
+      text: "这句话没有对应的演示稿。这个页面不会去检索博客，也没有接入模型，所以不会编一段像实时回答的内容，也不会补充作者没有公开写过的经历或数字。\n\n如果只是想从博客里接着看，下面三篇都是已经发布的文章。也可以换一个更接近现有文章的问法，比如「你是谁」「AI 味儿」「架构师」「西蒙学习法」。"
     };
   }
 
@@ -413,20 +532,64 @@
     return !view || !view.hidden;
   }
 
-  function setGeneratingUI(on) {
-    var stop = document.getElementById("ask-stop");
-    var send = document.getElementById("ask-chat-send");
-    if (stop) stop.hidden = !on;
-    if (send) send.setAttribute("aria-disabled", on ? "true" : "false");
-    document.querySelectorAll("#ask-app [data-ask-suggest]").forEach(function (button) {
-      button.disabled = on;
+  function fitComposer(textarea) {
+    if (!textarea) return;
+    var max = 168;
+    textarea.style.height = "auto";
+    var next = textarea.scrollHeight;
+    if (next > max) {
+      textarea.style.height = max + "px";
+      textarea.style.overflowY = "auto";
+      return;
+    }
+    textarea.style.height = next + "px";
+    textarea.style.overflowY = "hidden";
+  }
+
+  function syncSendButton(textarea) {
+    if (!textarea) return;
+    var form = textarea.closest("form");
+    var button = form ? form.querySelector(".ask-send") : null;
+    if (!button) return;
+    var stop = form.querySelector(".ask-stop");
+    var generating = Boolean(stop && !stop.hidden);
+    var busy = button.getAttribute("aria-busy") === "true";
+    var empty = textarea.value.trim().length === 0;
+    button.disabled = empty || generating || busy;
+    if (button.getAttribute("aria-busy") === "true") button.setAttribute("aria-label", "发送中");
+    else button.setAttribute("aria-label", "发送");
+    button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
+  }
+
+  function clearComposer(textarea) {
+    if (!textarea) return;
+    textarea.value = "";
+    fitComposer(textarea);
+    syncSendButton(textarea);
+  }
+
+  function refreshComposers() {
+    ["ask-input", "ask-empty-input", "ask-chat-input"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      fitComposer(el);
+      syncSendButton(el);
     });
   }
 
+  function setGeneratingUI(on) {
+    var stop = document.getElementById("ask-stop");
+    if (stop) stop.hidden = !on;
+    syncSendButton(document.getElementById("ask-chat-input"));
+  }
+
   function linkElement(source) {
+    var pack = api();
+    if (!source || !pack || !pack.URL_RE.test(source.url)) return null;
     var anchor = document.createElement("a");
     anchor.href = hrefFor(source.url);
-    anchor.textContent = source.title;
+    anchor.textContent = source.title || "";
+    if (source.heading) anchor.setAttribute("title", source.heading);
     if (runtime === "file") {
       anchor.target = "_blank";
       anchor.rel = "noopener noreferrer";
@@ -441,42 +604,48 @@
     if (!hasSources) return;
     var list = document.createElement("ul");
     message.sources.forEach(function (source) {
+      var anchor = linkElement(source);
+      if (!anchor) return;
       var item = document.createElement("li");
-      item.appendChild(linkElement(source));
+      item.appendChild(anchor);
       list.appendChild(item);
     });
+    if (!list.childNodes.length) {
+      sources.hidden = true;
+      return;
+    }
     sources.appendChild(list);
   }
 
   function renderMessage(message) {
     var article = document.createElement("article");
-    article.className = "ask-msg ask-msg-" + message.role;
+    article.className = "ask-msg ask-msg-" + (message.role === "user" ? "user" : "assistant");
     article.dataset.id = message.id;
-
     var bubble = document.createElement("div");
     bubble.className = "ask-bubble";
     var text = document.createElement("div");
     text.className = "ask-bubble-text";
     text.textContent = message.text || "";
     bubble.appendChild(text);
-
     if (message.role === "user") {
       article.appendChild(bubble);
       return article;
     }
-
     var pending = document.createElement("p");
     pending.className = "ask-pending";
     pending.textContent = "正在生成";
     pending.hidden = !(message.pending && !message.text);
     bubble.insertBefore(pending, text);
-
     var stopped = document.createElement("p");
     stopped.className = "ask-stopped";
-    stopped.textContent = "已停止";
+    stopped.textContent = textOf("stopped");
     stopped.hidden = !message.stopped;
     bubble.appendChild(stopped);
-
+    var error = document.createElement("p");
+    error.className = "ask-error";
+    error.textContent = message.errorText || "";
+    error.hidden = !message.errorText;
+    bubble.appendChild(error);
     var sources = document.createElement("div");
     sources.className = "ask-sources";
     fillSources(sources, message);
@@ -504,6 +673,7 @@
     if (app) app.setAttribute("data-ask-state", hasMessages ? "chat" : "empty");
     var last = box.lastElementChild;
     if (last && messages.length && followAnswer) reveal(last);
+    updateRemaining(loadRemaining());
   }
 
   function nearBottom() {
@@ -526,51 +696,112 @@
     var text = node.querySelector(".ask-bubble-text");
     var pending = node.querySelector(".ask-pending");
     var stopped = node.querySelector(".ask-stopped");
+    var error = node.querySelector(".ask-error");
     var sources = node.querySelector(".ask-sources");
     if (text) text.textContent = message.text || "";
     if (pending) pending.hidden = !(message.pending && !message.text);
     if (stopped) stopped.hidden = !message.stopped;
+    if (error) {
+      error.textContent = message.errorText || "";
+      error.hidden = !message.errorText;
+    }
     if (sources) fillSources(sources, message);
     if (followAnswer) reveal(node);
     return true;
   }
 
-  function stopTimer() {
-    if (active && active.timer) window.clearInterval(active.timer);
-    if (active) active.timer = 0;
+  function copyTurn(message, turn) {
+    message.text = turn.text || "";
+    message.sources = turn.sources || [];
+    message.sourceIds = turn.sourceIds || [];
+    message.pending = !!turn.pending && !turn.terminal;
+    message.stopped = !!turn.stopped;
+    message.stopKind = turn.stopKind || "";
+    message.errorText = turn.errorText || "";
+    message.complete = !!turn.complete;
+    message.failed = !!turn.failed;
+    if (typeof turn.remaining === "number") saveRemaining(turn.remaining);
   }
 
-  function haltActive(markStopped) {
-    if (!active) return;
-    var sessionId = active.sessionId;
-    var assistantId = active.assistantId;
-    stopTimer();
-    active = null;
-    setGeneratingUI(false);
-    if (!markStopped) return;
+  function persistTurn(sessionId, assistantId, turn) {
     var store = loadStore();
     var session = store.sessions[sessionId];
-    if (!session) return;
-    var assistant = session.messages.filter(function (message) {
-      return message.id === assistantId;
-    })[0];
-    if (assistant && assistant.pending) {
-      assistant.pending = false;
-      assistant.stopped = true;
-      session.updatedAt = Date.now();
-      saveStore(store);
-    }
+    if (!session) return null;
+    var message = null;
+    session.messages.forEach(function (item) {
+      if (item.id === assistantId) message = item;
+    });
+    if (!message) return null;
+    copyTurn(message, turn);
+    session.updatedAt = Date.now();
+    saveStore(store);
+    if (!paintAssistant(message)) renderSession(session);
+    else updateRemaining(loadRemaining());
+    return message;
+  }
+
+  function priorMessages(session, userMessageId, assistantId) {
+    return (session.messages || []).filter(function (message) {
+      return message.id !== userMessageId && message.id !== assistantId;
+    });
+  }
+
+  function validatedSources(list) {
+    var pack = api();
+    if (!pack) return [];
+    return pack.acceptSources((list || []).map(function (source) {
+      return { id: source.id || "", title: source.title || "", url: source.url || "", heading: source.heading || "" };
+    }));
+  }
+
+  function scenarioFile(scenario, history) {
+    if (scenario === "normal") return history && history.length ? "sse-followup.txt" : "sse-success.txt";
+    if (scenario === "stop" || scenario === "hang") return "sse-cancelled.txt";
+    if (scenario === "quota") return "http-429.json";
+    if (scenario === "unconfigured") return "http-503.json";
+    if (scenario === "failure") return "sse-upstream-error.txt";
+    if (scenario === "upstream") return "http-502.json";
+    if (scenario === "forbidden") return "http-403-origin.json";
+    if (scenario === "refusal") return "sse-refusal.txt";
+    return "";
+  }
+
+  function fixtureFile(name) {
+    var pack = window.ASK_FIXTURES;
+    if (!pack || pack.contractVersion !== 1 || !pack.files) return null;
+    return pack.files[name] || null;
+  }
+
+  function mockDelay() {
+    var value = Number(window.ASK_MOCK_DELAY_MS);
+    if (value >= 0 && value <= 5000) return value;
+    return 70;
+  }
+
+  function timeoutDelay() {
+    var value = Number(window.ASK_TIMEOUT_MS);
+    if (value >= 50 && value <= 25000) return value;
+    return 25000;
+  }
+
+  function statusFor(turn) {
+    if (turn.stopped && turn.stopKind === "timeout") return textOf("timeout");
+    if (turn.stopped) return textOf("stopped");
+    if (turn.errorText) return turn.errorText;
+    if (turn.failed && turn.text) return turn.text;
+    return "";
   }
 
   function startGeneration(sessionId, userMessageId) {
     if (active && active.sessionId === sessionId && active.userMessageId === userMessageId) return;
-    haltActive(false);
+    if (active) stopActive("user");
     var store = loadStore();
     var session = store.sessions[sessionId];
     if (!session) return;
-    var userMessage = session.messages.filter(function (message) {
-      return message.id === userMessageId;
-    })[0];
+    var userMessage = null;
+    session.messages.forEach(function (message) {
+      if (message.id === userMessageId) userMessage = message;
+    });
     if (!userMessage) return;
     var existing = null;
     session.messages.forEach(function (message) {
@@ -581,7 +812,34 @@
       setGeneratingUI(false);
       return;
     }
-    var answer = composeAnswer(userMessage.text, session);
+    var mode = currentMode();
+    if (existing && existing.pending && mode !== "demo") {
+      existing.pending = false;
+      existing.stopped = true;
+      existing.complete = false;
+      session.updatedAt = Date.now();
+      saveStore(store);
+      renderSession(session);
+      setGeneratingUI(false);
+      setStatus(textOf("stopped"));
+      return;
+    }
+
+    var pack = api();
+    var turn = pack ? pack.createTurn() : {
+      text: "",
+      sources: [],
+      sourceIds: [],
+      remaining: null,
+      pending: true,
+      stopped: false,
+      stopKind: "",
+      errorText: "",
+      terminal: false,
+      complete: false,
+      failed: false,
+      sawSources: false
+    };
     if (!existing) {
       existing = {
         id: nid("m"),
@@ -590,25 +848,34 @@
         text: "",
         pending: true,
         stopped: false,
-        intent: answer.intent,
-        label: answer.label,
-        sources: answer.sources
+        sources: [],
+        sourceIds: [],
+        complete: false,
+        failed: false,
+        errorText: ""
       };
       session.messages.push(existing);
       session.updatedAt = Date.now();
       saveStore(store);
+    } else if (mode === "demo" && existing.text) {
+      turn.text = existing.text;
     }
-    var full = answer.text;
-    var index = existing.text ? existing.text.length : 0;
+
+    var controller = typeof AbortController === "function" ? new AbortController() : { signal: {}, abort: function () {} };
+    var timeoutId = 0;
+    var intervalId = 0;
+    var settled = false;
+    var abortReason = "";
+    var assistantId = existing.id;
     active = {
       sessionId: sessionId,
       userMessageId: userMessageId,
-      assistantId: existing.id,
-      timer: 0
+      assistantId: assistantId,
+      controller: controller
     };
     setGeneratingUI(true);
     followAnswer = true;
-    setStatus(index ? "继续生成" : "正在生成");
+    setStatus("正在生成");
     renderSession(loadStore().sessions[sessionId]);
     var questions = document.querySelectorAll("#ask-messages .ask-msg-user");
     var question = questions[questions.length - 1];
@@ -617,77 +884,285 @@
       question.tabIndex = -1;
       question.focus({ preventScroll: true });
     }
+
+    function finish(reason) {
+      if (settled) return;
+      settled = true;
+      if (timeoutId) window.clearTimeout(timeoutId);
+      if (intervalId) window.clearInterval(intervalId);
+      if (!turn.terminal && pack) {
+        if (reason === "timeout") pack.applyTimeout(turn);
+        else if (reason === "user" || reason === "leave") pack.applyStop(turn);
+        else if (!turn.text) pack.applyLocalMessage(turn, textOf("network"));
+        else pack.applyIncomplete(turn);
+      } else if (!turn.terminal && !pack) {
+        turn.terminal = true;
+        turn.pending = false;
+        turn.failed = true;
+        turn.text = textOf("unconfigured");
+      }
+      persistTurn(sessionId, assistantId, turn);
+      if (active && active.assistantId === assistantId) active = null;
+      setGeneratingUI(false);
+      setStatus(statusFor(turn));
+    }
+
+    if (controller.signal && controller.signal.addEventListener) {
+      controller.signal.addEventListener("abort", function () {
+        var reason = abortReason;
+        if (!reason && typeof controller.signal.reason === "string") reason = controller.signal.reason;
+        finish(reason || "user");
+      });
+    }
+
+    function stopWith(reason) {
+      abortReason = reason;
+      try {
+        controller.abort(reason);
+      } catch (error) {
+        try { controller.abort(); } catch (again) { finish(reason); }
+      }
+      if (!controller.signal || !controller.signal.aborted) finish(reason);
+    }
+    active.stop = stopWith;
+
+    if (mode === "api" || mode === "mock") {
+      timeoutId = window.setTimeout(function () { stopWith("timeout"); }, timeoutDelay());
+    }
+
+    if (mode === "demo") {
+      runDemo(session, userMessage.text, turn, existing, controller, function (id) { intervalId = id; }, finish);
+      return;
+    }
+    if (mode === "unconfigured" || !pack) {
+      if (pack) pack.applyUnconfigured(turn);
+      else {
+        turn.terminal = true;
+        turn.pending = false;
+        turn.failed = true;
+        turn.text = textOf("unconfigured");
+      }
+      finish("done");
+      return;
+    }
+
+    var fresh = loadStore().sessions[sessionId];
+    var request = pack.createRequest(userMessage.text, priorMessages(fresh, userMessageId, assistantId));
+    if (!request.ok) {
+      if (request.code === "empty") {
+        finish("user");
+        return;
+      }
+      pack.applyLocalMessage(turn, request.message);
+      finish("done");
+      return;
+    }
+    if (mode === "mock") {
+      runMock(sessionId, assistantId, request.body.history, turn, controller, function (id) { intervalId = id; }, finish);
+      return;
+    }
+    runFetch(request, turn, controller, finish);
+  }
+
+  function runDemo(session, question, turn, existing, controller, setIntervalId, finish) {
+    if (currentMode() !== "demo") {
+      finish("done");
+      return;
+    }
+    var answer = composeAnswer(question, session);
+    existing.intent = answer.intent;
+    existing.label = answer.label;
+    var store = loadStore();
+    var live = store.sessions[session.id];
+    if (live) {
+      live.messages.forEach(function (message) {
+        if (message.id === existing.id) {
+          message.intent = answer.intent;
+          message.label = answer.label;
+        }
+      });
+      saveStore(store);
+    }
+    var sources = validatedSources(answer.sources);
+    var full = answer.text || "";
+    var index = turn.text ? turn.text.length : 0;
     var step = full.length > 320 ? 4 : 2;
-    active.timer = window.setInterval(function () {
-      if (!active || active.assistantId !== existing.id) return;
+    var timer = window.setInterval(function () {
+      if (controller.signal && controller.signal.aborted) return;
       index = Math.min(full.length, index + step);
-      var current = loadStore();
-      var liveSession = current.sessions[sessionId];
-      var live = liveSession && liveSession.messages.filter(function (message) {
-        return message.id === existing.id;
-      })[0];
-      if (!live) {
-        haltActive(false);
-        return;
+      turn.text = full.slice(0, index);
+      turn.pending = index < full.length;
+      persistTurn(session.id, existing.id, turn);
+      if (index < full.length) return;
+      window.clearInterval(timer);
+      turn.sources = sources;
+      turn.sourceIds = sources.map(function (source) { return source.id; }).filter(Boolean);
+      turn.pending = false;
+      turn.terminal = true;
+      turn.complete = true;
+      turn.intent = answer.intent;
+      var again = loadStore();
+      var saved = again.sessions[session.id];
+      if (saved) {
+        saved.messages.forEach(function (message) {
+          if (message.id === existing.id) {
+            message.intent = answer.intent;
+            message.label = answer.label;
+          }
+        });
+        saveStore(again);
       }
-      live.text = full.slice(0, index);
-      live.pending = index < full.length;
-      live.intent = answer.intent;
-      live.label = answer.label;
-      live.sources = answer.sources;
-      liveSession.updatedAt = Date.now();
-      if (index >= full.length) {
-        live.pending = false;
-        live.stopped = false;
-        saveStore(current);
-        stopTimer();
-        active = null;
-        setGeneratingUI(false);
-        setStatus("");
-        if (!paintAssistant(live)) renderSession(liveSession);
-        return;
-      }
-      saveStore(current);
-      if (!paintAssistant(live)) renderSession(liveSession);
+      finish("done");
     }, 28);
+    setIntervalId(timer);
+  }
+
+  function runMock(sessionId, assistantId, history, turn, controller, setIntervalId, finish) {
+    var pack = api();
+    var scenario = selectedScenario();
+    var name = scenarioFile(scenario, history);
+    var file = name ? fixtureFile(name) : null;
+    if (scenario === "network" || !file || !pack) {
+      if (pack) pack.applyLocalMessage(turn, textOf("network"));
+      finish("done");
+      return;
+    }
+    if (file.contentType.indexOf("text/event-stream") === -1) {
+      pack.applyHttp(turn, pack.interpretHttp(file.status, file.body));
+      finish("done");
+      return;
+    }
+    var delay = mockDelay();
+    var events = pack.parseSse(file.body);
+    if (delay > 0) {
+      var expanded = [];
+      events.forEach(function (event) {
+        var tokenText = event.event === "token" && event.data ? event.data.text : "";
+        if (typeof tokenText !== "string" || Array.from(tokenText).length <= 2) {
+          expanded.push(event);
+          return;
+        }
+        var chars = Array.from(tokenText);
+        for (var i = 0; i < chars.length; i += 2) {
+          expanded.push({ event: "token", data: { text: chars.slice(i, i + 2).join("") } });
+        }
+      });
+      events = expanded;
+    }
+    var index = 0;
+    function applyOne() {
+      if (!events[index]) return false;
+      pack.applySseEvent(turn, events[index]);
+      index += 1;
+      persistTurn(sessionId, assistantId, turn);
+      return true;
+    }
+    if (delay === 0) {
+      while (index < events.length && !(controller.signal && controller.signal.aborted)) {
+        applyOne();
+        if (turn.terminal) break;
+      }
+      if (turn.terminal || (controller.signal && controller.signal.aborted)) {
+        finish("done");
+        return;
+      }
+      if (scenario === "hang") return;
+      finish(scenario === "stop" ? "user" : "end");
+      return;
+    }
+    var timer = window.setInterval(function () {
+      if (controller.signal && controller.signal.aborted) return;
+      if (index >= events.length) {
+        window.clearInterval(timer);
+        if (scenario === "hang") return;
+        finish(scenario === "stop" ? "user" : "end");
+        return;
+      }
+      applyOne();
+      if (turn.terminal) finish("done");
+    }, delay);
+    setIntervalId(timer);
+  }
+
+  function runFetch(request, turn, controller, finish) {
+    var pack = api();
+    var endpoint = pack.resolveEndpoint(document.documentElement.dataset.askApi);
+    if (!endpoint) {
+      pack.applyUnconfigured(turn);
+      finish("done");
+      return;
+    }
+    var init = pack.createFetchInit(request.json, controller.signal);
+    fetch(endpoint, init).then(function (response) {
+      if (controller.signal.aborted) return null;
+      var type = String(response.headers.get("content-type") || "").toLowerCase();
+      if (response.status === 200 && type.indexOf("text/event-stream") !== -1 && response.body) {
+        return readStream(response, turn, controller);
+      }
+      return response.text().then(function (body) {
+        pack.applyHttp(turn, pack.interpretHttp(response.status, body));
+      });
+    }).then(function () {
+      if (controller.signal.aborted) return;
+      finish(turn.terminal ? "done" : "end");
+    }).catch(function () {
+      if (controller.signal.aborted) return;
+      if (!turn.terminal) {
+        if (!turn.text) pack.applyLocalMessage(turn, textOf("network"));
+        else pack.applyIncomplete(turn);
+      }
+      finish("done");
+    });
+  }
+
+  function readStream(response, turn, controller) {
+    var pack = api();
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder("utf-8");
+    var parser = pack.createParser();
+    function pump() {
+      return reader.read().then(function (result) {
+        if (controller.signal.aborted) return null;
+        if (result.done) {
+          parser.finish().forEach(function (event) {
+            pack.applySseEvent(turn, event);
+          });
+          if (active) persistTurn(active.sessionId, active.assistantId, turn);
+          return null;
+        }
+        parser.push(decoder.decode(result.value, { stream: true })).forEach(function (event) {
+          pack.applySseEvent(turn, event);
+        });
+        if (active) persistTurn(active.sessionId, active.assistantId, turn);
+        if (turn.terminal) return null;
+        return pump();
+      });
+    }
+    return pump();
+  }
+
+  function stopActive(reason) {
+    if (!active || !active.stop) return;
+    active.stop(reason || "user");
   }
 
   function stopGeneration() {
     if (!active) return;
-    var sessionId = active.sessionId;
-    var assistantId = active.assistantId;
-    stopTimer();
-    active = null;
-    var store = loadStore();
-    var session = store.sessions[sessionId];
-    var assistant = session && session.messages.filter(function (message) {
-      return message.id === assistantId;
-    })[0];
-    if (assistant) {
-      assistant.pending = false;
-      assistant.stopped = true;
-      if (!assistant.text) assistant.text = "";
-      session.updatedAt = Date.now();
-      saveStore(store);
-      renderSession(session);
-    }
-    setGeneratingUI(false);
-    setStatus("已停止");
-    showHint("chat", "");
+    stopActive("user");
   }
 
   function syncChat() {
     if (!chatIsActive()) return;
+    setupMockNote();
     var sessionId = resolveSessionId();
-    var session = sessionId ? loadStore().sessions[sessionId] : null;
+    var session = sessionId ? findOneSession(sessionId) : null;
     renderSession(session);
     if (!session) {
       setGeneratingUI(false);
       return;
     }
     var last = session.messages[session.messages.length - 1];
-    var needs = last && (last.role === "user" || (last.role === "assistant" && last.pending));
-    if (!needs) {
+    if (!last || (last.role === "assistant" && !last.pending)) {
       setGeneratingUI(false);
       return;
     }
@@ -706,7 +1181,7 @@
     document.querySelectorAll("#sidebar .nav-item").forEach(function (item) {
       item.classList.remove("active");
     });
-    var link = document.querySelector(isAsk ? "[data-ask-nav='ask']" : "#sidebar .nav-item [data-ask-nav='home']");
+    var link = document.querySelector(isAsk ? "[data-ask-nav='ask']" : "[data-ask-nav='home']");
     if (link && link.closest(".nav-item")) link.closest(".nav-item").classList.add("active");
     var title = document.getElementById("topbar-title");
     if (title) {
@@ -724,40 +1199,34 @@
     document.dispatchEvent(new CustomEvent("ask-view", { detail: { view: name } }));
     markNav(name === "ask");
     if (name === "home") {
-      haltActive(false);
-      var input = document.getElementById("ask-input");
-      if (input) input.value = "";
+      if (active) stopActive("leave");
+      clearComposer(document.getElementById("ask-input"));
       showHint("home", "");
       resetHomeSend();
       window.scrollTo(0, 0);
       return;
     }
-    haltActive(false);
+    if (active) stopActive("leave");
     window.scrollTo(0, 0);
     syncChat();
   }
 
   function resetHomeSend() {
     var button = document.getElementById("ask-send");
-    if (button) {
-      button.textContent = "发送";
-      button.removeAttribute("aria-busy");
-    }
-    document.querySelectorAll("#ask-hero [data-ask-suggest]").forEach(function (item) {
-      item.removeAttribute("aria-busy");
-    });
+    if (!button) return;
+    button.removeAttribute("aria-busy");
+    syncSendButton(document.getElementById("ask-input"));
   }
 
-  function markHomeSending(control) {
+  function markHomeSending() {
     var button = document.getElementById("ask-send");
-    if (button) {
-      button.setAttribute("aria-busy", "true");
-      button.textContent = "发送中";
-    }
-    if (control && control.setAttribute) control.setAttribute("aria-busy", "true");
+    if (!button) return;
+    button.setAttribute("aria-busy", "true");
+    button.setAttribute("aria-label", "发送中");
+    button.disabled = true;
   }
 
-  function sendHome(text, control) {
+  function sendHome(text) {
     if (sendGuard) return;
     var value = String(text || "").trim();
     if (!value) {
@@ -767,11 +1236,10 @@
       return;
     }
     sendGuard = true;
-    markHomeSending(control);
-    haltActive(true);
+    markHomeSending();
+    if (active) stopActive("user");
     var id = createSession(value);
-    var input = document.getElementById("ask-input");
-    if (input) input.value = value;
+    clearComposer(document.getElementById("ask-input"));
     showHint("home", "");
     if (runtime === "file") {
       history.pushState({ askView: "ask", askSessionId: id }, "", location.pathname);
@@ -800,18 +1268,18 @@
     }
     sendGuard = true;
     showHint("chat", "");
+    showHint("empty", "");
     var sessionId = resolveSessionId();
     var userMessage;
-    if (!sessionId || !loadStore().sessions[sessionId]) {
+    if (!sessionId || !findOneSession(sessionId)) {
       sessionId = createSession(value);
       adoptSession(sessionId);
-      userMessage = loadStore().sessions[sessionId].messages[0];
+      userMessage = findOneSession(sessionId).messages[0];
     } else {
       userMessage = appendUser(sessionId, value);
     }
     ["ask-chat-input", "ask-empty-input"].forEach(function (id) {
-      var field = document.getElementById(id);
-      if (field) field.value = "";
+      clearComposer(document.getElementById(id));
     });
     sendGuard = false;
     startGeneration(sessionId, userMessage.id);
@@ -836,8 +1304,34 @@
       submit();
     });
     textarea.addEventListener("input", function () {
-      var which = textarea.id === "ask-chat-input" ? "chat" : "home";
+      var which = textarea.id === "ask-chat-input" ? "chat" : textarea.id === "ask-empty-input" ? "empty" : "home";
       if (textarea.value.trim()) showHint(which, "");
+      fitComposer(textarea);
+      syncSendButton(textarea);
+    });
+    fitComposer(textarea);
+    syncSendButton(textarea);
+  }
+
+  function setupMockNote() {
+    var note = document.getElementById("ask-mock-note");
+    if (!note) return;
+    var mock = currentMode() === "mock";
+    note.hidden = !mock;
+    if (!mock) return;
+    var select = document.getElementById("ask-mock-scenario");
+    if (!select || select.dataset.askReady === "1") return;
+    select.dataset.askReady = "1";
+    MOCK_SCENARIOS.forEach(function (item) {
+      var option = document.createElement("option");
+      option.value = item.id;
+      option.textContent = item.label;
+      select.appendChild(option);
+    });
+    var initial = selectedScenario();
+    if (initial !== "hang") select.value = initial;
+    select.addEventListener("change", function () {
+      rememberScenario(select.value);
     });
   }
 
@@ -855,7 +1349,6 @@
       emptyForm.addEventListener("submit", function (event) {
         event.preventDefault();
         var input = document.getElementById("ask-empty-input");
-        if (input && !String(input.value || "").trim()) showHint("empty", "请输入内容后再发送");
         sendChat(input ? input.value : "");
       });
     }
@@ -882,6 +1375,13 @@
     var stop = document.getElementById("ask-stop");
     if (stop) stop.addEventListener("click", stopGeneration);
     document.addEventListener("click", function (event) {
+      var homeNav = event.target.closest("[data-ask-nav='home']");
+      if (homeNav && runtime === "file") {
+        event.preventDefault();
+        history.pushState({ askView: "home" }, "", location.pathname);
+        showView("home");
+        return;
+      }
       var askNav = event.target.closest("[data-ask-nav='ask']");
       if (!askNav) return;
       sessionStorage.removeItem(PENDING_KEY);
@@ -889,13 +1389,6 @@
       event.preventDefault();
       history.pushState({ askView: "ask" }, "", location.pathname);
       showView("ask");
-    });
-    document.addEventListener("ask-home", function () {
-      if (runtime !== "file") return;
-      var ask = document.getElementById("view-ask");
-      if (!ask || ask.hidden) return;
-      history.pushState({ askView: "home" }, "", location.pathname);
-      showView("home");
     });
     if (runtime === "file") {
       window.addEventListener("popstate", function (event) {
@@ -910,6 +1403,7 @@
       document.documentElement.dataset.askBound = "1";
       bindAll();
     }
+    setupMockNote();
     if (runtime === "file") {
       if (!history.state || !history.state.askView) {
         history.replaceState({ askView: "home" }, "", location.pathname);
@@ -920,32 +1414,37 @@
       return;
     }
     applyGreeting();
+    refreshComposers();
     if (document.getElementById("ask-app")) syncChat();
+    else updateRemaining(loadRemaining());
   }
+
+  window.addEventListener("resize", function () {
+    refreshComposers();
+  });
 
   window.addEventListener("scroll", function () {
     if (scrollLock) return;
     followAnswer = nearBottom();
   }, { passive: true });
 
+  window.addEventListener("pagehide", function () {
+    if (active) stopActive("leave");
+  });
+
   window.addEventListener("pageshow", function (event) {
-    if (event.persisted) {
-      stopTimer();
-      active = null;
-    }
+    if (event.persisted && active) stopActive("leave");
     var homeInput = document.getElementById("ask-input");
     if (homeInput && sessionStorage.getItem(CLEAR_HOME_KEY) === "1") {
       homeInput.value = "";
       sessionStorage.removeItem(CLEAR_HOME_KEY);
-      resetHomeSend();
     }
-    if (homeInput) resetHomeSend();
+    resetHomeSend();
+    refreshComposers();
+    sendGuard = false;
     if (runtime === "site" && document.getElementById("ask-app")) syncChat();
   });
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
 })();

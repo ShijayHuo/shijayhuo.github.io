@@ -2,6 +2,7 @@ name: Ask API deploy
 
 # 只有默认分支上的这个文件会生效。Pages 工作流成功之后才进入这里。
 # 仓库变量 ASK_DEPLOY_ENABLED 未设为 true 时整段跳过，避免在密钥和 D1 还没手工配好时部署。
+# main 上的 Pages 工作流会在 push 后立刻发布站点。Worker 重部署仍要求真实 D1 id 和 ASK_DEPLOY_ENABLED。
 on:
   workflow_run:
     workflows:
@@ -41,6 +42,13 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Restore embedding cache
+        uses: actions/cache@v4
+        with:
+          path: backend/.cache/embeddings.json
+          key: ask-embeddings-${{ hashFiles('backend/src/limits.ts', 'backend/src/chunk.ts', 'backend/src/embedding-space.ts', '_posts/**/*.md', '_tabs/**/*.md') }}
+          restore-keys: ask-embeddings-
+
       - name: Build knowledge
         working-directory: backend
         env:
@@ -48,11 +56,34 @@ jobs:
           EMBEDDING_BASE_URL: ${{ secrets.EMBEDDING_BASE_URL }}
           EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
           EMBEDDING_DIMENSIONS: ${{ secrets.EMBEDDING_DIMENSIONS }}
-        run: node --experimental-strip-types scripts/build-knowledge.ts --out src/generated/knowledge.ts
+        run: node --experimental-strip-types scripts/build-knowledge.ts --write-worker-module --out src/generated/knowledge.ts
 
       - name: Refuse mock knowledge
         working-directory: backend
         run: node --experimental-strip-types -e "import { readFileSync } from 'node:fs'; const text = readFileSync('src/generated/knowledge.ts','utf8'); if (text.includes('bundledKnowledge: KnowledgeBundle | null = null') || text.includes('\"provider\":\"mock\"')) { console.error('知识包未通过真实构建'); process.exit(1); }"
+
+      - name: Require a real D1 id and a strong HMAC
+        working-directory: backend
+        env:
+          QUOTA_HMAC_KEY: ${{ secrets.QUOTA_HMAC_KEY }}
+        run: |
+          if grep -q '00000000-0000-4000-8000-000000000000' wrangler.toml; then
+            echo 'D1 database_id 仍是占位符，不能部署。'
+            exit 1
+          fi
+          node --experimental-strip-types -e "import { isWeakProductionHmac } from './src/quota.ts'; const secret = process.env.QUOTA_HMAC_KEY ?? ''; if (!secret || isWeakProductionHmac(secret)) { console.error('QUOTA_HMAC_KEY 缺失，或短于 32 字符，或仍是 local-only。'); process.exit(1); }"
+
+      - name: Check Worker script size
+        working-directory: backend
+        run: |
+          npm run build:worker
+          npm run size
+          bytes=$(wc -c < dist/worker.js)
+          echo "worker uncompressed bytes: ${bytes}"
+          if [ "$bytes" -gt 67108864 ]; then
+            echo '未压缩超过 64 MiB。Free 和 Paid 都使用这个上限，不能部署。'
+            exit 1
+          fi
 
       - name: Deploy Worker
         working-directory: backend

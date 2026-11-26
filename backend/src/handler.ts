@@ -14,7 +14,7 @@ import {
 import { createMockChat, createMockEmbedding } from "./mock-adapter.ts";
 import { createOpenAIChat, createOpenAIEmbedding } from "./openai-adapter.ts";
 import { createPrompt } from "./prompt.ts";
-import { createQuotaKey, readTrustedIp, updateQuotaByKey } from "./quota.ts";
+import { createQuotaKey, isWeakProductionHmac, readTrustedIp, updateQuotaByKey } from "./quota.ts";
 import { createCitationSplitter, sourcesFromCitations } from "./cite.ts";
 import { createRetrievalQuery, encodeSse, isFollowUpQuestion, parseAskRequest } from "./protocol.ts";
 import { findChunksByQuery } from "./retrieve.ts";
@@ -149,7 +149,8 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
   const bundleErrors = bundle ? await verifyKnowledgeBundle(bundle) : ["知识包不存在。"];
   const configured = Boolean(bundle && bundleErrors.length === 0 && database && secret && minScore !== null);
   const mockBundle = bundle?.manifest.embedding.provider === "mock";
-  if (!configured || (mockBundle && !mockAllowed) || minScore === null) {
+  const weakHmac = env.ASK_REQUIRE_STRONG_HMAC === "1" && isWeakProductionHmac(secret);
+  if (!configured || weakHmac || (mockBundle && !mockAllowed) || minScore === null) {
     return finish(json(503, { error: "unavailable", message: MSG.unavailable }, cors), "unavailable");
   }
   const readyBundle = bundle;

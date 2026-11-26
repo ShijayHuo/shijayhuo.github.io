@@ -2,6 +2,14 @@
      Based on jekyll-theme-chirpy 7.6.0 _includes/sidebar.html.
      Adds the AI 问答 entry, which opens the same /ask/ page as the homepage composer.
 -->
+<script>
+  document.documentElement.dataset.askDemo = {{ site.ask.demo | default: false | jsonify }};
+  {% if jekyll.environment == "production" %}
+  document.documentElement.dataset.askApi = {{ site.ask.api_url | default: "" | jsonify }};
+  {% else %}
+  document.documentElement.dataset.askApi = "";
+  {% endif %}
+</script>
 
 <aside aria-label="Sidebar" id="sidebar" class="d-flex flex-column align-items-end">
   <header class="profile-wrapper">
@@ -23,7 +31,7 @@
     <ul class="nav">
       <!-- home -->
       <li class="nav-item{% if page.layout == 'home' %}{{ " active" }}{% endif %}">
-        <a href="{{ '/' | relative_url }}" class="nav-link">
+        <a href="{{ '/' | relative_url }}" class="nav-link" data-ask-nav="home">
           <i class="fa-fw fas fa-home"></i>
           <span>{{ site.data.locales[include.lang].tabs.home | upcase }}</span>
         </a>
@@ -33,7 +41,9 @@
           <i class="fa-fw fas fa-comments"></i>
           <span>AI 问答</span>
         </a>
-        <span class="ask-demo-mark">交互演示</span>
+        {% if site.ask.demo %}
+          <span class="ask-demo-mark">交互演示</span>
+        {% endif %}
       </li>
       <!-- the real tabs -->
       {% for tab in site.tabs %}

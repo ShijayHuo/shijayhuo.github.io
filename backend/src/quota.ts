@@ -7,6 +7,14 @@ WHERE used < ${QUOTA_LIMIT}`;
 
 export const FIND_QUOTA_SQL = `SELECT used, updated_at FROM quota WHERE key = ?1`;
 
+const WEAK_HMAC_KEYS = new Set(["local-only", "test-hmac", "changeme"]);
+
+export function isWeakProductionHmac(secret: string): boolean {
+  const value = secret.trim();
+  if (value.length < 32) return true;
+  return WEAK_HMAC_KEYS.has(value);
+}
+
 export async function createQuotaKey(ip: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",

@@ -305,7 +305,7 @@
   border: 1px solid var(--btn-border-color);
   border-radius: 0.9rem;
   background: var(--main-bg);
-  padding: 0.35rem 0.45rem 0.45rem;
+  padding: 0.35rem 0.4rem 0.4rem;
 }
 
 .ask-field:focus-within {
@@ -316,12 +316,14 @@
 .ask-field textarea {
   display: block;
   width: 100%;
-  min-height: 6.2rem;
-  resize: vertical;
+  min-height: 3.2rem;
+  max-height: 10.5rem;
+  resize: none;
+  overflow-y: hidden;
   border: 0;
   background: transparent;
   color: var(--text-color);
-  padding: 0.7rem 0.7rem 0.2rem;
+  padding: 0.85rem 0.75rem 0.25rem;
   font: inherit;
   font-size: 16px;
   line-height: 1.65;
@@ -338,13 +340,18 @@
 .ask-field-bar,
 .ask-field-actions {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-end;
-  gap: 0.65rem;
+  gap: 0.5rem;
+}
+
+.ask-field-bar {
+  min-height: 2.75rem;
+  padding: 0.1rem 0.15rem 0.1rem 0.45rem;
 }
 
 .ask-hint {
-  margin: 0;
+  margin: 0 0 0.45rem;
   margin-right: auto;
   color: var(--heading-color);
   font-size: 0.84rem;
@@ -354,41 +361,111 @@
   display: none;
 }
 
+.ask-icon {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+
 .ask-send,
 .ask-stop {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
-  min-height: 2.15rem;
-  border-radius: 0.55rem;
-  padding: 0.3rem 0.9rem;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
   font: inherit;
-  font-size: 0.92rem;
   cursor: pointer;
 }
 
+.ask-send::before,
+.ask-stop::before {
+  content: "";
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
 .ask-send {
-  border: 1px solid var(--btn-border-color);
-  background: var(--main-bg);
-  color: var(--text-color);
+  color: #fff;
 }
 
-.ask-send:hover,
+.ask-send::before {
+  background: var(--link-color);
+}
+
+html[data-bs-theme="dark"] .ask-send:not(:disabled):not([aria-disabled="true"]) {
+  color: #1b1b1e;
+}
+
+.ask-send:hover:not(:disabled)::before {
+  background: color-mix(in srgb, var(--link-color) 86%, #000);
+}
+
+html[data-bs-theme="dark"] .ask-send:hover:not(:disabled)::before {
+  background: color-mix(in srgb, var(--link-color) 86%, #fff);
+}
+
+.ask-send:active:not(:disabled)::before {
+  background: color-mix(in srgb, var(--link-color) 74%, #000);
+}
+
+html[data-bs-theme="dark"] .ask-send:active:not(:disabled)::before {
+  background: color-mix(in srgb, var(--link-color) 74%, #fff);
+}
+
 .ask-send:focus-visible,
-.ask-stop:hover,
 .ask-stop:focus-visible {
-  border-color: var(--link-color);
-  color: var(--link-color);
+  outline: none;
 }
 
+.ask-send:focus-visible::before,
+.ask-stop:focus-visible::before {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
+}
+
+.ask-send:disabled,
 .ask-send[aria-disabled='true'],
 .ask-send[aria-busy='true'] {
-  opacity: 0.45;
+  color: var(--text-muted-color);
   cursor: not-allowed;
 }
 
+.ask-send:disabled::before,
+.ask-send[aria-disabled='true']::before,
+.ask-send[aria-busy='true']::before {
+  background: color-mix(in srgb, var(--heading-color) 16%, var(--main-bg));
+}
+
 .ask-stop {
-  border: 1px solid var(--btn-border-color);
-  background: transparent;
   color: var(--text-color);
+}
+
+.ask-stop::before {
+  background: var(--main-bg);
+  box-shadow: inset 0 0 0 1px var(--btn-border-color);
+}
+
+.ask-stop:hover,
+.ask-stop:focus-visible {
+  color: var(--link-color);
+}
+
+.ask-stop:hover::before,
+.ask-stop:focus-visible::before {
+  box-shadow: inset 0 0 0 1px var(--link-color);
 }
 
 .ask-empty[hidden],
@@ -396,7 +473,10 @@
 .ask-composer[hidden],
 .ask-pending[hidden],
 .ask-stopped[hidden],
+.ask-error[hidden],
 .ask-sources[hidden],
+.ask-mock-note[hidden],
+.ask-remaining[hidden],
 #ask-stop[hidden] {
   display: none !important;
 }
@@ -507,10 +587,50 @@ html:has(#ask-app) {
 }
 
 .ask-pending,
-.ask-stopped {
+.ask-stopped,
+.ask-error {
   margin: 0.35rem 0 0;
   color: var(--text-muted-color);
   font-size: 0.84rem;
+}
+
+.ask-mock-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  width: min(42rem, 100%);
+  margin: 0 auto 0.75rem;
+  color: var(--text-muted-color);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.ask-mock-note select {
+  margin-left: 0.3rem;
+  border: 1px solid var(--btn-border-color);
+  border-radius: 0.35rem;
+  background: var(--main-bg);
+  color: var(--text-color);
+  font: inherit;
+}
+
+.ask-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  width: min(42rem, 100%);
+  margin: auto auto 0;
+  background: var(--main-bg);
+}
+
+.ask-remaining {
+  margin: 0 0 0.35rem;
+  color: var(--text-muted-color);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .ask-sources {
@@ -527,12 +647,10 @@ html:has(#ask-app) {
 }
 
 .ask-composer {
-  position: sticky;
-  bottom: 0;
-  z-index: 4;
-  width: min(42rem, 100%);
-  margin: auto auto 0;
-  padding-top: 0.75rem;
+  position: static;
+  width: 100%;
+  margin: 0;
+  padding-top: 0.35rem;
   padding-bottom: calc(0.45rem + env(safe-area-inset-bottom));
   background: var(--main-bg);
 }
@@ -549,6 +667,10 @@ html:has(#ask-app) {
 
   .ask-demo-mark {
     margin-left: 2.4rem;
+  }
+
+  .ask-field textarea {
+    min-height: 4.6rem;
   }
 }
 

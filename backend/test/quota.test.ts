@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
-import { FIND_QUOTA_SQL, INSERT_QUOTA_SQL, createQuotaKey, readTrustedIp, updateQuotaByKey } from "../src/quota.ts";
+import { FIND_QUOTA_SQL, INSERT_QUOTA_SQL, createQuotaKey, isWeakProductionHmac, readTrustedIp, updateQuotaByKey } from "../src/quota.ts";
 import { createFileQuotaDatabase, createSqliteQuotaDatabase, readQuotaSummary, snapshotQuota } from "./sqlite-quota.ts";
 
 test("额度 SQL 在第二十一次不再增加", async () => {
@@ -66,4 +67,28 @@ test("文件额度库重启后保留次数，迁移语句不清零", async () =>
   assert.equal(readQuotaSummary(file).usedSum, 7);
   assert.throws(() => snapshotQuota(file, 8, "mismatch"), /不符/);
   assert.equal(readQuotaSummary(file).usedMax, 7);
+});
+
+test("快照读到 WAL 里尚未写回主文件的次数", () => {
+  const sql = readFileSync(path.join(import.meta.dirname, "../migrations/0001_quota.sql"), "utf8");
+  const executable = sql.split("\n").filter((line) => !line.trim().startsWith("--")).join("\n");
+  const file = path.join(mkdtempSync(path.join(tmpdir(), "ask-quota-wal-")), "quota.sqlite");
+  const writer = new DatabaseSync(file);
+  writer.exec("PRAGMA journal_mode = WAL");
+  writer.exec(executable);
+  writer.prepare("INSERT INTO quota (key, used, updated_at) VALUES (?, ?, ?)").run("k", 14, 1);
+  const naive = `${file}.naive`;
+  copyFileSync(file, naive);
+  const snap = snapshotQuota(file, 14, "wal");
+  assert.equal(readQuotaSummary(snap.backup).usedMax, 14);
+  assert.equal(readQuotaSummary(snap.backup).usedSum, 14);
+  assert.throws(() => readQuotaSummary(naive), /no such table/);
+  writer.close();
+});
+
+test("生产 HMAC 拒绝 local-only 和短密钥", () => {
+  assert.equal(isWeakProductionHmac("local-only"), true);
+  assert.equal(isWeakProductionHmac("test-hmac"), true);
+  assert.equal(isWeakProductionHmac("x".repeat(31)), true);
+  assert.equal(isWeakProductionHmac("x".repeat(32)), false);
 });

@@ -1,6 +1,8 @@
 name = "ajie-ask"
 main = "src/index.ts"
 compatibility_date = "2026-11-25"
+# 账户子域已是 aaaaaajie666。首次部署后的地址是
+# https://ajie-ask.aaaaaajie666.workers.dev 。这个脚本现在还不存在。
 compatibility_flags = ["nodejs_compat"]
 
 [observability]
@@ -15,6 +17,7 @@ enabled = true
 ASK_ALLOWED_ORIGINS = "https://shijayhuo.github.io"
 ASK_ALLOW_MOCK = "0"
 ASK_ALLOW_DEV_IP = "0"
+ASK_REQUIRE_STRONG_HMAC = "1"
 
 # database_id 是占位符。本仓库没有创建 Cloudflare D1。
 # 手工创建并替换之后才能部署。迁移只建表，不会清空额度。
