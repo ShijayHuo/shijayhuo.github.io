@@ -143,7 +143,7 @@ var html = `<!DOCTYPE html>
       <p class="site-subtitle">保持好奇，持续学习</p>
       <ul class="nav">
         <li class="nav-item active"><a class="nav-link" href="#home" data-ask-nav="home">首页</a></li>
-        <li class="nav-item"><a class="nav-link" href="#ask" data-ask-nav="ask">AI 问答</a></li>
+        <li class="nav-item"><a class="nav-link" href="#ask" data-ask-nav="ask">问问阿杰</a></li>
         <li class="nav-item"><a class="nav-link" href="https://shijayhuo.github.io/categories/" target="_blank" rel="noopener noreferrer">分类</a></li>
         <li class="nav-item"><a class="nav-link" href="https://shijayhuo.github.io/tags/" target="_blank" rel="noopener noreferrer">标签</a></li>
         <li class="nav-item"><a class="nav-link" href="https://shijayhuo.github.io/archives/" target="_blank" rel="noopener noreferrer">归档</a></li>
