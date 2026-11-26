@@ -284,6 +284,16 @@ try {
     assert(await page.locator("#ask-mock-note").isVisible(), "模拟入口没有标出来");
     assert((await page.locator("#ask-mock-note").innerText()).includes("不是访问限额"), "没有标明次数边界");
     await sendAsk(page, "你是谁", "#ask-empty-input");
+    assert(await page.evaluate(() => document.activeElement && document.activeElement.id) === "ask-chat-input", "空态回车后焦点不在输入框");
+    assert(await page.evaluate(() => {
+      const msg = document.querySelector(".ask-msg-user");
+      if (!msg || document.activeElement === msg || msg.getAttribute("tabindex") !== null) return false;
+      msg.tabIndex = -1;
+      msg.focus();
+      const outlined = getComputedStyle(msg).outlineStyle !== "none";
+      document.getElementById("ask-chat-input").focus();
+      return !outlined;
+    }), "用户消息仍有整行焦点框");
     await page.locator(".ask-msg-assistant .ask-bubble-text").waitFor();
     assert((await page.locator(".ask-msg-assistant .ask-bubble-text").innerText()).includes("关于页写的是霍世杰。"), "正常样例正文");
     assert(await page.locator("#ask-remaining").innerText() === "还可问 19 次", "剩余次数文案");
@@ -297,6 +307,7 @@ try {
     await shot(page, "ask-chat-desktop-dark.png");
     await page.evaluate(() => document.documentElement.setAttribute("data-bs-theme", "light"));
     await sendAsk(page, "那这个怎么卸载", "#ask-chat-input");
+    assert(await page.evaluate(() => document.activeElement && document.activeElement.id) === "ask-chat-input", "追问回车后焦点不在输入框");
     await page.waitForFunction(() => document.body.innerText.includes("卸载要看 Cordis"));
     assert(await page.locator("#ask-remaining").innerText() === "还可问 18 次", "追问次数");
     assert(await page.locator(".ask-msg-user").count() === 2, "没有多轮用户消息");
@@ -476,6 +487,7 @@ try {
     await local.locator("#ask-input").fill("本地预览");
     await local.locator("#ask-send").click();
     await local.locator("#view-ask:not([hidden]) .ask-msg-assistant").waitFor();
+    assert(await local.evaluate(() => document.activeElement && document.activeElement.id) === "ask-chat-input", "首页发送后焦点不在输入框");
     assert((await local.locator(".ask-msg-assistant").innerText()).includes("关于页写的是霍世杰。"), "预览没有回放样例");
     const about = await local.locator(".ask-sources a").getAttribute("href");
     assert(about.startsWith("https://shijayhuo.github.io/about"), "预览来源没有链到线上: " + about);

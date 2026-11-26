@@ -583,6 +583,17 @@ function selectedScenario() {
     syncSendButton(document.getElementById("ask-chat-input"));
   }
 
+  function focusComposer() {
+    var input = document.getElementById("ask-chat-input");
+    var form = input ? input.closest("form") : null;
+    if (input && !input.disabled && (!form || !form.hidden)) {
+      input.focus({ preventScroll: true });
+      return;
+    }
+    var stop = document.getElementById("ask-stop");
+    if (stop && !stop.hidden && !stop.disabled) stop.focus({ preventScroll: true });
+  }
+
   function fillBubbleText(el, message) {
     if (!el) return;
     var value = message.text || "";
@@ -893,13 +904,9 @@ function selectedScenario() {
     followAnswer = true;
     setStatus("正在生成");
     renderSession(loadStore().sessions[sessionId]);
-    var questions = document.querySelectorAll("#ask-messages .ask-msg-user");
-    var question = questions[questions.length - 1];
-    var chatInput = document.getElementById("ask-chat-input");
-    if (question && document.activeElement !== chatInput) {
-      question.tabIndex = -1;
-      question.focus({ preventScroll: true });
-    }
+    // The first send hides the empty composer. Focusing the new message row
+    // instead paints the browser focus ring around the whole line.
+    focusComposer();
 
     function finish(reason) {
       if (settled) return;
