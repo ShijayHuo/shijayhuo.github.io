@@ -1,0 +1,26 @@
+{
+  "recordedAt": "2026-11-25",
+  "bundle": {
+    "documents": 102,
+    "chunks": 669,
+    "buildSeconds": 48.8,
+    "jsonBytes": 13869263,
+    "gzipBytes": 3449048,
+    "model": "qwen3.7-text-embedding-flash",
+    "dimensions": 1024
+  },
+  "positives": {
+    "count": 6,
+    "top1Correct": 6,
+    "minScore": 0.5836,
+    "maxScore": 0.7509
+  },
+  "negatives": [
+    { "id": "unknown-tax", "topUrl": "/about/", "topScore": 0.4486 },
+    { "id": "unpublished-career", "topUrl": "/about/", "topScore": 0.4507 }
+  ],
+  "defaultMinScore": 0.25,
+  "recallAccepted": false,
+  "thresholdValidated": false,
+  "note": "这是已经看到的全库冒烟，不是调阈值的拟合集。正例只汇报了区间，这里不补造单题分数。0.25 低于两个负例，不能当成有效阈值；间隙里的任何切分都还没有独立复核。"
+}

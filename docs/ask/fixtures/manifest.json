@@ -1,0 +1,102 @@
+{
+  "contractVersion": 1,
+  "endpoint": "/ask",
+  "cases": [
+    {
+      "id": "first-question",
+      "request": "request-first.json",
+      "response": "sse-success.txt",
+      "status": 200,
+      "contentType": "text/event-stream; charset=utf-8",
+      "quota": "reserved"
+    },
+    {
+      "id": "followup",
+      "request": "request-followup.json",
+      "response": "sse-followup.txt",
+      "status": 200,
+      "contentType": "text/event-stream; charset=utf-8",
+      "quota": "reserved"
+    },
+    {
+      "id": "refusal",
+      "request": "request-unknown.json",
+      "response": "sse-refusal.txt",
+      "status": 200,
+      "contentType": "text/event-stream; charset=utf-8",
+      "quota": "reserved"
+    },
+    {
+      "id": "stream-error",
+      "request": "request-first.json",
+      "response": "sse-upstream-error.txt",
+      "status": 200,
+      "contentType": "text/event-stream; charset=utf-8",
+      "quota": "reserved-not-refunded"
+    },
+    {
+      "id": "cancelled",
+      "request": "request-first.json",
+      "response": "sse-cancelled.txt",
+      "status": 200,
+      "contentType": "text/event-stream; charset=utf-8",
+      "quota": "reserved-not-refunded"
+    },
+    {
+      "id": "empty-question",
+      "request": "request-empty.json",
+      "response": "http-400-empty.json",
+      "status": 400,
+      "contentType": "application/json; charset=utf-8",
+      "quota": "not-reserved"
+    },
+    {
+      "id": "bad-history-role",
+      "request": "request-bad-role.json",
+      "response": "http-400-role.json",
+      "status": 400,
+      "contentType": "application/json; charset=utf-8",
+      "quota": "not-reserved"
+    },
+    {
+      "id": "origin-rejected",
+      "request": "request-first.json",
+      "response": "http-403-origin.json",
+      "status": 403,
+      "contentType": "application/json; charset=utf-8",
+      "quota": "not-reserved"
+    },
+    {
+      "id": "ip-missing",
+      "request": "request-first.json",
+      "response": "http-403-ip.json",
+      "status": 403,
+      "contentType": "application/json; charset=utf-8",
+      "quota": "not-reserved"
+    },
+    {
+      "id": "quota-exceeded",
+      "request": "request-first.json",
+      "response": "http-429.json",
+      "status": 429,
+      "contentType": "application/json; charset=utf-8",
+      "quota": "not-reserved"
+    },
+    {
+      "id": "embedding-failed",
+      "request": "request-first.json",
+      "response": "http-502.json",
+      "status": 502,
+      "contentType": "application/json; charset=utf-8",
+      "quota": "reserved-not-refunded"
+    },
+    {
+      "id": "unconfigured",
+      "request": "request-first.json",
+      "response": "http-503.json",
+      "status": 503,
+      "contentType": "application/json; charset=utf-8",
+      "quota": "not-reserved"
+    }
+  ]
+}

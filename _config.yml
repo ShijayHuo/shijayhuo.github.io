@@ -25,6 +25,13 @@ description: >- # used by seo meta and the atom feed
 # E.g. 'https://username.github.io', note that it does not end with a '/'.
 url: "https://shijayhuo.github.io"
 
+# 问答开关。页面读取这两项，协议见 docs/ask/contract.md。
+# 演示关闭。api_url 是已验通的生产接口。只有 JEKYLL_ENV=production 会把它写进页面。
+# 本地构建仍写出空地址，避免验收站打到生产。demo 为 true 时忽略地址。
+ask:
+  demo: false
+  api_url: "https://ajie-ask.aaaaaajie666.workers.dev/ask"
+
 github:
   username: ShijayHuo # change to your GitHub username
 
@@ -220,6 +227,7 @@ exclude:
   - "*.gem"
   - "*.gemspec"
   - docs
+  - backend
   - tools
   - README.md
   - LICENSE

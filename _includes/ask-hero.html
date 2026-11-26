@@ -1,0 +1,27 @@
+<section id="ask-hero" class="ask-hero" data-ask-url="{{ '/ask/' | relative_url }}" aria-labelledby="ask-hero-title">
+  <h2 class="ask-title"><span id="ask-hero-title">下午好</span></h2>
+  <form id="ask-hero-form" class="ask-form" method="post" action="{{ '/ask/' | relative_url }}">
+    <div class="ask-field">
+      <label class="ask-sr" for="ask-input">问题</label>
+      <textarea
+        id="ask-input"
+        rows="1"
+        placeholder="想了解阿杰的经历，或找某个话题的文章？在这里问我"
+        autocomplete="off"
+        enterkeyhint="send"
+      ></textarea>
+      <div class="ask-field-bar">
+        <p id="ask-hero-hint" class="ask-hint" role="status"></p>
+        <div class="ask-field-actions">
+          <button id="ask-send" class="ask-send" type="submit" disabled aria-label="发送" title="发送">
+            <svg class="ask-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</section>
+
+<script src="{{ '/assets/js/ask-sse.js' | relative_url }}"></script>
+<script src="{{ '/assets/js/ask-fixtures.js' | relative_url }}"></script>
+<script src="{{ '/assets/js/ask-demo.js' | relative_url }}"></script>

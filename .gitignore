@@ -14,6 +14,13 @@ _site
 # NPM dependencies
 node_modules
 package-lock.json
+!backend/package-lock.json
+
+# Ask API build output and local secrets
+backend/dist
+backend/.cache
+backend/.dev.vars
+backend/.wrangler
 
 # IDE configurations
 .idea

@@ -1,0 +1,80 @@
+{
+  "embedding": {
+    "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "model": "qwen3.7-text-embedding-flash",
+    "dimensions": 1024
+  },
+  "minScore": 0.25,
+  "thresholdValidated": false,
+  "probe": {
+    "unrelated": 0.308,
+    "related": [0.427, 0.391],
+    "note": "四句探针，不是博客全量。无关句已经高于 0.25。不能把 0.25 当成有效阈值，也不能为了通过再调低。"
+  },
+  "smoke": {
+    "documents": 102,
+    "chunks": 669,
+    "positiveTop1": 6,
+    "positiveCount": 6,
+    "positiveMin": 0.5836,
+    "positiveMax": 0.7509,
+    "negatives": [
+      { "id": "unknown-tax", "topUrl": "/about/", "topScore": 0.4486 },
+      { "id": "unpublished-career", "topUrl": "/about/", "topScore": 0.4507 }
+    ],
+    "recallAccepted": false,
+    "thresholdValidated": false,
+    "note": "全库冒烟只说明 0.25 会放进负例。不能用这 8 题拟合门限。见 eval/calibration.md。"
+  },
+  "questions": [
+    {
+      "id": "cordis-forms",
+      "question": "插件如果既能写成函数，也能写成对象或类，而且注册时要带一份 cordis.yml，这是在说明哪一种插件约定？",
+      "expectUrls": ["/posts/cordis-plugin-guide/"],
+      "forbiddenUrls": ["/posts/career/"]
+    },
+    {
+      "id": "cordis-dispose",
+      "question": "把插件装上去之后，还能在改配置、热重载或依赖服务消失时把资源收干净，不留下脏状态。这种回收能力讲的是什么？",
+      "expectUrls": ["/posts/cordis-reversibility/"],
+      "forbiddenUrls": ["/posts/career/"]
+    },
+    {
+      "id": "acl-supplement",
+      "question": "成员里新来的人只需要看代码，可是现有权限只分拥有者、用户组和其余的人，没法单独放行。后来页面权限用什么办法补上？",
+      "expectUrls": ["/posts/pingcode-wiki-acl-permission-design/"],
+      "forbiddenUrls": ["/posts/career/"]
+    },
+    {
+      "id": "redis-latency",
+      "question": "数据主要待在内存里，执行时少做上下文切换和加锁，再用非阻塞方式同时等很多连接。这种数据库为什么读写延迟比较低？",
+      "expectUrls": ["/posts/why-redis-is-fast/"],
+      "forbiddenUrls": ["/posts/career/"]
+    },
+    {
+      "id": "event-stream",
+      "question": "整段文字一次返回容易超时。改成浏览器开一条长连接，按 text/event-stream 持续收新片段，这叫哪一种服务器推送？",
+      "expectUrls": ["/posts/server-sent-events/"],
+      "forbiddenUrls": ["/posts/career/"]
+    },
+    {
+      "id": "bitmask-check",
+      "question": "读、写、执行被记成 4、2 和 1。已经有一个合计后的权限数字时，怎么判断里面包不包括其中某一项？",
+      "expectUrls": ["/posts/bitmask-permission-design/"],
+      "forbiddenUrls": ["/posts/career/"]
+    },
+    {
+      "id": "unknown-tax",
+      "question": "阿杰的税号是多少",
+      "expectRefusal": true,
+      "forbiddenUrls": ["/posts/career/"]
+    },
+    {
+      "id": "unpublished-career",
+      "question": "那段几乎全是较年轻同事的创业公司，全栈阶段大概从哪一年算起？",
+      "expectRefusal": true,
+      "forbiddenUrls": ["/posts/career/"],
+      "note": "career 未发布。这题不能当成应命中。"
+    }
+  ]
+}
