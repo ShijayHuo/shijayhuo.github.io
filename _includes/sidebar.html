@@ -4,7 +4,11 @@
 -->
 <script>
   document.documentElement.dataset.askDemo = {{ site.ask.demo | default: false | jsonify }};
+  {% if jekyll.environment == "production" %}
   document.documentElement.dataset.askApi = {{ site.ask.api_url | default: "" | jsonify }};
+  {% else %}
+  document.documentElement.dataset.askApi = "";
+  {% endif %}
 </script>
 
 <aside aria-label="Sidebar" id="sidebar" class="d-flex flex-column align-items-end">

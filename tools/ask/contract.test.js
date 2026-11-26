@@ -342,9 +342,12 @@ test("frontend source does not call a model or send credentials", function () {
   });
 });
 
-test("production config stays unconfigured", function () {
+test("production config uses the verified worker and local builds stay empty", function () {
   var config = fs.readFileSync(path.join(root, "_config.yml"), "utf8");
-  assert.match(config, /ask:\n  demo: false\n  api_url: ""/);
+  assert.match(config, /ask:\n  demo: false\n  api_url: "https:\/\/ajie-ask\.aaaaaajie666\.workers\.dev\/ask"/);
+  var sidebar = fs.readFileSync(path.join(root, "_includes/sidebar.html"), "utf8");
+  assert.match(sidebar, /jekyll\.environment == "production"/);
+  assert.match(sidebar, /document\.documentElement\.dataset\.askApi = "";/);
 });
 
 test("an unfinished stream becomes the network sentence and keeps tokens", function () {

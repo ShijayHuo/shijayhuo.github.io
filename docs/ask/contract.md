@@ -35,7 +35,7 @@
 ```yaml
 ask:
   demo: false
-  api_url: ""
+  api_url: "https://ajie-ask.aaaaaajie666.workers.dev/ask"
 ```
 
 侧栏脚本把它们写到 `<html>`：
@@ -51,7 +51,7 @@ document.documentElement.dataset.askApi = {{ site.ask.api_url | default: "" | js
 - 未配置：演示不为真，且 `dataset.askApi` 去掉空白后为空。不发请求。助手正文固定为 `问答服务尚未配置。`，没有来源。
 - 接口：演示不为真，且 `askApi` 是 `http:` 或 `https:` 绝对地址。只发下面的 `POST`。
 
-`ask.demo: true` 时忽略 `api_url`。生产默认必须是演示关闭且地址为空。缺配置时显示未配置，不用演示文案顶上。
+`ask.demo: true` 时忽略 `api_url`。生产站点（`JEKYLL_ENV=production`）演示关闭，并把上面的地址写进页面。其他构建仍写出空的 `askApi`，本地验收不会打到生产。缺配置时显示未配置，不用演示文案顶上。
 
 `「交互演示」` 标记只在演示模式渲染。接口模式和未配置模式都不渲染。
 

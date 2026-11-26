@@ -9,6 +9,7 @@ import { createKnowledgeBundle, saveKnowledgeBundle } from "../src/bundle.ts";
 import { hashEmbedding } from "../src/mock-adapter.ts";
 import { createOpenAIEmbedding } from "../src/openai-adapter.ts";
 import { listPublishedPosts } from "../src/publish.ts";
+import { rewriteAskApi } from "../src/local-switch.ts";
 import { findChunksByQuery } from "../src/retrieve.ts";
 import type { KnowledgeBundle } from "../src/types.ts";
 import {
@@ -198,10 +199,7 @@ function startSite(directory: string): Promise<void> {
     }
     if (file.endsWith(".html")) {
       readFile(file, "utf8").then((html) => {
-        const patched = html.replace(
-          'document.documentElement.dataset.askApi = "";',
-          `document.documentElement.dataset.askApi = ${JSON.stringify(workerOrigin)};`,
-        );
+        const patched = rewriteAskApi(html, workerOrigin).html;
         response.writeHead(200, {
           "content-type": "text/html; charset=utf-8",
           "cache-control": "no-store",

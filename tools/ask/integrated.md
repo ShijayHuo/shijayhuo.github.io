@@ -2,7 +2,7 @@
 
 这是本机验收，不是部署。页面仍是现有 Jekyll 站点。问答走真实 Worker 的 `POST /ask`，额度走 Miniflare 本地 D1。生成和 embedding 打到本机的测试上游，不使用密钥，也不调用付费模型。
 
-生产配置保持 `ask.demo: false`、`ask.api_url: ""`。启动脚本只在发出的 HTML 里把接口改成 `http://127.0.0.1:8787`，不改仓库配置。
+生产配置是 `ask.demo: false` 和已验通的 Worker 地址，只有 `JEKYLL_ENV=production` 会写进页面。本地构建仍是空地址。启动脚本把空地址或该生产地址改成 `http://127.0.0.1:8787`，不改仓库配置。
 
 ## 启动
 

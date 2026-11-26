@@ -2,7 +2,7 @@ name: Ask API deploy
 
 # 只有默认分支上的这个文件会生效。Pages 工作流成功之后才进入这里。
 # 仓库变量 ASK_DEPLOY_ENABLED 未设为 true 时整段跳过，避免在密钥和 D1 还没手工配好时部署。
-# main 上的 Pages 工作流会在 push 后立刻发布站点。api_url 仍为空时不要合并到 main。
+# main 上的 Pages 工作流会在 push 后立刻发布站点。Worker 重部署仍要求真实 D1 id 和 ASK_DEPLOY_ENABLED。
 on:
   workflow_run:
     workflows:

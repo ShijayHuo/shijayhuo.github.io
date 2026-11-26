@@ -160,4 +160,8 @@ test("静态页只改写空的 askApi，文章和脚本原样返回", async () =
   const rewritten = rewriteAskApi(`<b>${ASK_API_ASSIGNMENT}</b>`);
   assert.equal(rewritten.rewritten, true);
   assert.equal(rewriteAskApi("<p>no marker</p>").rewritten, false);
+  const production = rewriteAskApi('document.documentElement.dataset.askApi = "https://ajie-ask.aaaaaajie666.workers.dev/ask";');
+  assert.equal(production.rewritten, true);
+  assert.equal(production.html.includes("aaaaaajie666"), false);
+  assert.match(production.html, /127\.0\.0\.1:8787/);
 });
