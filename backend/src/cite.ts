@@ -243,6 +243,11 @@ export function createCitationSplitter(): {
   };
 }
 
+export function stripCitations(text: string): string {
+  const splitter = createCitationSplitter();
+  return `${splitter.push(text)}${splitter.finish().text}`;
+}
+
 export function sourcesFromCitations<T extends Pick<SourceLink, "id" | "title" | "url" | "heading">>(
   evidence: T[],
   citedIds: string[],

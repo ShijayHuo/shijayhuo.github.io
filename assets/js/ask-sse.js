@@ -462,6 +462,50 @@
     return { ok: true, body: body, json: json };
   }
 
+  function historyEndpoint(endpoint) {
+    var value = String(endpoint || "").trim();
+    if (!value) return "";
+    var url;
+    try {
+      url = new URL(value);
+    } catch (error) {
+      return "";
+    }
+    var path = (url.pathname || "/").replace(/\/+$/, "");
+    if (path.slice(-4) !== "/ask") return "";
+    return url.origin + path + "/history";
+  }
+
+  function createHistoryFetchInit() {
+    return {
+      method: "GET",
+      credentials: "omit",
+      headers: { Accept: "application/json" }
+    };
+  }
+
+  function parseHistoryResponse(payload) {
+    if (!payload || typeof payload !== "object") return null;
+    var remaining = payload.remaining;
+    if (typeof remaining !== "number" || !Number.isInteger(remaining) || remaining < 0 || remaining > 20) return null;
+    if (!Array.isArray(payload.messages)) return null;
+    var messages = [];
+    payload.messages.forEach(function (item) {
+      if (!item || typeof item !== "object") return;
+      if (item.role !== "user" && item.role !== "assistant") return;
+      if (typeof item.content !== "string") return;
+      var content = clipChars(item.content, LIMITS.content);
+      if (item.role === "user") {
+        messages.push({ role: "user", content: content });
+        return;
+      }
+      messages.push({ role: "assistant", content: content, sources: acceptSources(item.sources) });
+    });
+    if (messages.length > 40) messages = messages.slice(messages.length - 40);
+    var day = typeof payload.day === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payload.day) ? payload.day : "";
+    return { day: day, remaining: remaining, messages: messages };
+  }
+
   function createFetchInit(json, signal) {
     var init = {
       method: "POST",
@@ -509,6 +553,9 @@
     remainingLabel: remainingLabel,
     greetingForHour: greetingForHour,
     resolveEndpoint: resolveEndpoint,
+    historyEndpoint: historyEndpoint,
+    createHistoryFetchInit: createHistoryFetchInit,
+    parseHistoryResponse: parseHistoryResponse,
     hasMockQuery: hasMockQuery,
     readMockScenario: readMockScenario,
     resolveMode: resolveMode,

@@ -1167,9 +1167,22 @@ function selectedScenario() {
     stopActive("user");
   }
 
-  function syncChat() {
-    if (!chatIsActive()) return;
-    setupMockNote();
+  var historyTicket = 0;
+
+  function hasPendingHandoff() {
+    var pending = null;
+    try {
+      pending = sessionStorage.getItem(PENDING_KEY);
+    } catch (error) {
+      return false;
+    }
+    if (!pending) return false;
+    var session = findOneSession(pending);
+    if (!session || !session.messages || !session.messages.length) return false;
+    return session.messages[session.messages.length - 1].role === "user";
+  }
+
+  function syncLocalChat() {
     var sessionId = resolveSessionId();
     var session = sessionId ? findOneSession(sessionId) : null;
     renderSession(session);
@@ -1190,6 +1203,91 @@ function selectedScenario() {
       }
     }
     if (userMessage) startGeneration(session.id, userMessage.id);
+  }
+
+  function applyServerHistory(parsed) {
+    saveRemaining(parsed.remaining);
+    if (!parsed.messages.length) {
+      try {
+        var cleared = Object.assign({}, history.state || {});
+        delete cleared.askSessionId;
+        var url = runtime === "file" ? location.pathname : location.pathname + location.search;
+        history.replaceState(cleared, "", url);
+      } catch (error) {
+        error = error;
+      }
+      renderSession(null);
+      setGeneratingUI(false);
+      return;
+    }
+    var store = loadStore();
+    var id = parsed.day ? "day-" + parsed.day : "day-current";
+    store.sessions[id] = {
+      id: id,
+      updatedAt: Date.now(),
+      messages: parsed.messages.map(function (item) {
+        var sources = item.role === "assistant" ? item.sources || [] : [];
+        return {
+          id: nid("m"),
+          role: item.role,
+          text: item.content,
+          complete: true,
+          pending: false,
+          stopped: false,
+          failed: false,
+          sources: sources,
+          sourceIds: sources.map(function (source) { return source.id; }).filter(Boolean)
+        };
+      })
+    };
+    store.currentId = id;
+    saveStore(store);
+    adoptSession(id);
+    renderSession(store.sessions[id]);
+    setGeneratingUI(false);
+  }
+
+  function loadServerHistory() {
+    var pack = api();
+    var endpoint = pack ? pack.resolveEndpoint(document.documentElement.dataset.askApi) : "";
+    var historyUrl = pack && endpoint ? pack.historyEndpoint(endpoint) : "";
+    if (!historyUrl || typeof fetch !== "function") {
+      syncLocalChat();
+      return;
+    }
+    var ticket = ++historyTicket;
+    fetch(historyUrl, pack.createHistoryFetchInit()).then(function (response) {
+      if (!response || !response.ok) return null;
+      var type = String(response.headers.get("content-type") || "").toLowerCase();
+      if (type.indexOf("application/json") === -1) return null;
+      return response.json();
+    }).then(function (payload) {
+      if (ticket !== historyTicket || active) return;
+      if (!payload) {
+        syncLocalChat();
+        return;
+      }
+      var parsed = pack.parseHistoryResponse(payload);
+      if (!parsed) {
+        syncLocalChat();
+        return;
+      }
+      applyServerHistory(parsed);
+    }).catch(function () {
+      if (ticket !== historyTicket || active) return;
+      syncLocalChat();
+    });
+  }
+
+  function syncChat() {
+    if (!chatIsActive()) return;
+    setupMockNote();
+    if (active) return;
+    if (currentMode() === "api" && !hasPendingHandoff()) {
+      loadServerHistory();
+      return;
+    }
+    syncLocalChat();
   }
 
   function markNav(isAsk) {
@@ -1282,6 +1380,7 @@ function selectedScenario() {
       if (focus) focus.focus();
       return;
     }
+    historyTicket += 1;
     sendGuard = true;
     showHint("chat", "");
     showHint("empty", "");
@@ -1458,7 +1557,7 @@ function selectedScenario() {
     resetHomeSend();
     refreshComposers();
     sendGuard = false;
-    if (runtime === "site" && document.getElementById("ask-app")) syncChat();
+    if (event.persisted && runtime === "site" && document.getElementById("ask-app")) syncChat();
   });
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
