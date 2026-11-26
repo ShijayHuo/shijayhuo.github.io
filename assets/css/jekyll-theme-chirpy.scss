@@ -541,7 +541,8 @@ html:has(#ask-app) {
   gap: 1.35rem;
 }
 
-.ask-messages:focus {
+.ask-messages:focus,
+.ask-msg:focus {
   outline: none;
 }
 

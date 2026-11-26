@@ -393,7 +393,8 @@ html:has(#ask-app) {
   gap: 1.35rem;
 }
 
-.ask-messages:focus {
+.ask-messages:focus,
+.ask-msg:focus {
   outline: none;
 }
 
@@ -1173,10 +1174,41 @@ html:has(#ask-app) {
     return url.origin + path + "/history";
   }
 
+  function historyPathname(value) {
+    try {
+      return new URL(value).pathname.replace(/\/+$/, "") || "/";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function isAskHistoryUrl(value) {
+    return historyPathname(value) === "/ask/history";
+  }
+
+  function isSameHistoryPath(left, right) {
+    var path = historyPathname(left);
+    if (path !== "/ask/history" || path !== historyPathname(right)) return false;
+    try {
+      return new URL(left).origin === new URL(right).origin;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function historyRequestUrl(endpoint) {
+    var value = historyEndpoint(endpoint);
+    if (!value) return "";
+    var url = new URL(value);
+    url.searchParams.set("ask_cache", String(Date.now()));
+    return url.href;
+  }
+
   function createHistoryFetchInit() {
     return {
       method: "GET",
       credentials: "omit",
+      cache: "no-store",
       headers: { Accept: "application/json" }
     };
   }
@@ -1251,6 +1283,9 @@ html:has(#ask-app) {
     greetingForHour: greetingForHour,
     resolveEndpoint: resolveEndpoint,
     historyEndpoint: historyEndpoint,
+    isAskHistoryUrl: isAskHistoryUrl,
+    isSameHistoryPath: isSameHistoryPath,
+    historyRequestUrl: historyRequestUrl,
     createHistoryFetchInit: createHistoryFetchInit,
     parseHistoryResponse: parseHistoryResponse,
     hasMockQuery: hasMockQuery,
@@ -2298,6 +2333,17 @@ function selectedScenario() {
     syncSendButton(document.getElementById("ask-chat-input"));
   }
 
+  function focusComposer() {
+    var input = document.getElementById("ask-chat-input");
+    var form = input ? input.closest("form") : null;
+    if (input && !input.disabled && (!form || !form.hidden)) {
+      input.focus({ preventScroll: true });
+      return;
+    }
+    var stop = document.getElementById("ask-stop");
+    if (stop && !stop.hidden && !stop.disabled) stop.focus({ preventScroll: true });
+  }
+
   function fillBubbleText(el, message) {
     if (!el) return;
     var value = message.text || "";
@@ -2608,13 +2654,9 @@ function selectedScenario() {
     followAnswer = true;
     setStatus("正在生成");
     renderSession(loadStore().sessions[sessionId]);
-    var questions = document.querySelectorAll("#ask-messages .ask-msg-user");
-    var question = questions[questions.length - 1];
-    var chatInput = document.getElementById("ask-chat-input");
-    if (question && document.activeElement !== chatInput) {
-      question.tabIndex = -1;
-      question.focus({ preventScroll: true });
-    }
+    // The first send hides the empty composer. Focusing the new message row
+    // instead paints the browser focus ring around the whole line.
+    focusComposer();
 
     function finish(reason) {
       if (settled) return;
@@ -2962,16 +3004,38 @@ function selectedScenario() {
     setGeneratingUI(false);
   }
 
+  function forgetCachedHistory(historyUrl) {
+    var pack = api();
+    if (!historyUrl || !pack || typeof caches === "undefined" || !caches.keys) return Promise.resolve();
+    return caches.keys().then(function (names) {
+      return Promise.all(names.map(function (name) {
+        return caches.open(name).then(function (cache) {
+          return cache.keys().then(function (requests) {
+            return Promise.all(requests.map(function (request) {
+              if (!pack.isSameHistoryPath(request.url, historyUrl)) return null;
+              return cache.delete(request);
+            }));
+          });
+        });
+      }));
+    }).catch(function () {
+      return null;
+    });
+  }
+
   function loadServerHistory() {
     var pack = api();
     var endpoint = pack ? pack.resolveEndpoint(document.documentElement.dataset.askApi) : "";
-    var historyUrl = pack && endpoint ? pack.historyEndpoint(endpoint) : "";
+    var historyUrl = pack && endpoint ? pack.historyRequestUrl(endpoint) : "";
     if (!historyUrl || typeof fetch !== "function") {
       syncLocalChat();
       return;
     }
     var ticket = ++historyTicket;
-    fetch(historyUrl, pack.createHistoryFetchInit()).then(function (response) {
+    forgetCachedHistory(historyUrl).then(function () {
+      if (ticket !== historyTicket || active) return null;
+      return fetch(historyUrl, pack.createHistoryFetchInit());
+    }).then(function (response) {
       if (!response || !response.ok) return null;
       var type = String(response.headers.get("content-type") || "").toLowerCase();
       if (type.indexOf("application/json") === -1) return null;

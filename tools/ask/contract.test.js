@@ -408,6 +408,18 @@ test("service worker still caches the site and does not store ask history", func
   assert.match(config, /deny_paths:\n(?:[ \t]*#[^\n]*\n)*[ \t]+- "\/ask\/history"/);
 });
 
+test("sending keeps focus on the composer instead of the user message", function () {
+  var demo = fs.readFileSync(path.join(root, "assets/js/ask-demo.js"), "utf8");
+  assert.match(demo, /function focusComposer\(/);
+  assert.match(demo, /ask-chat-input/);
+  assert.match(demo, /input\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(demo, /stop\.focus\(\{ preventScroll: true \}\)/);
+  assert.equal(demo.indexOf("question.focus"), -1);
+  assert.equal(demo.indexOf("question.tabIndex"), -1);
+  var scss = fs.readFileSync(path.join(root, "assets/css/jekyll-theme-chirpy.scss"), "utf8");
+  assert.match(scss, /\.ask-messages:focus,\s*\.ask-msg:focus \{\s*outline: none;/);
+});
+
 test("frontend source does not call a model or send credentials", function () {
   ["assets/js/ask-sse.js", "assets/js/ask-markdown.js", "assets/js/ask-demo.js", "assets/js/ask-fixtures.js"].forEach(function (file) {
     var source = fs.readFileSync(path.join(root, file), "utf8");
