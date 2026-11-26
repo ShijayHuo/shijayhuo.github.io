@@ -162,8 +162,11 @@ pwa:
     # Paths defined here will be excluded from the PWA cache.
     # Usually its value is the `baseurl` of another website that
     # shares the same domain name as the current website.
+    # Chirpy matches pathname on every origin and caches GET responses even when
+    # they send Cache-Control: no-store. /ask/history is the per-IP transcript
+    # on the ask worker, so it must not be stored or replayed from Cache Storage.
     deny_paths:
-      # - "/example"  # URLs match `<SITE_URL>/example/*` will not be cached by the PWA
+      - "/ask/history"
 
 paginate: 10
 

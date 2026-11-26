@@ -1247,16 +1247,38 @@ function selectedScenario() {
     setGeneratingUI(false);
   }
 
+  function forgetCachedHistory(historyUrl) {
+    var pack = api();
+    if (!historyUrl || !pack || typeof caches === "undefined" || !caches.keys) return Promise.resolve();
+    return caches.keys().then(function (names) {
+      return Promise.all(names.map(function (name) {
+        return caches.open(name).then(function (cache) {
+          return cache.keys().then(function (requests) {
+            return Promise.all(requests.map(function (request) {
+              if (!pack.isSameHistoryPath(request.url, historyUrl)) return null;
+              return cache.delete(request);
+            }));
+          });
+        });
+      }));
+    }).catch(function () {
+      return null;
+    });
+  }
+
   function loadServerHistory() {
     var pack = api();
     var endpoint = pack ? pack.resolveEndpoint(document.documentElement.dataset.askApi) : "";
-    var historyUrl = pack && endpoint ? pack.historyEndpoint(endpoint) : "";
+    var historyUrl = pack && endpoint ? pack.historyRequestUrl(endpoint) : "";
     if (!historyUrl || typeof fetch !== "function") {
       syncLocalChat();
       return;
     }
     var ticket = ++historyTicket;
-    fetch(historyUrl, pack.createHistoryFetchInit()).then(function (response) {
+    forgetCachedHistory(historyUrl).then(function () {
+      if (ticket !== historyTicket || active) return null;
+      return fetch(historyUrl, pack.createHistoryFetchInit());
+    }).then(function (response) {
       if (!response || !response.ok) return null;
       var type = String(response.headers.get("content-type") || "").toLowerCase();
       if (type.indexOf("application/json") === -1) return null;
