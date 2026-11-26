@@ -340,8 +340,19 @@ test("history replay ignores forged identity and still renders markdown", functi
   var init = protocol.createHistoryFetchInit();
   assert.equal(init.method, "GET");
   assert.equal(init.credentials, "omit");
+  assert.equal(init.cache, "no-store");
   assert.equal(init.body, undefined);
   assert.equal(JSON.stringify(init).indexOf("ip"), -1);
+  var busted = new URL(protocol.historyRequestUrl("https://ask.example/ask"));
+  assert.equal(busted.origin, "https://ask.example");
+  assert.equal(busted.pathname, "/ask/history");
+  assert.equal(busted.searchParams.has("ask_cache"), true);
+  assert.equal(busted.searchParams.has("ip"), false);
+  assert.equal(protocol.isAskHistoryUrl(busted.href), true);
+  assert.equal(protocol.isSameHistoryPath(busted.href, "https://ask.example/ask/history"), true);
+  assert.equal(protocol.isSameHistoryPath("https://ask.example/ask/history?x=1", "https://other.example/ask/history"), false);
+  assert.equal(protocol.isSameHistoryPath("https://ask.example/ask", "https://ask.example/ask/history"), false);
+  assert.equal(protocol.historyRequestUrl("https://ask.example/v1"), "");
   assert.equal(JSON.stringify(init).indexOf("x-ask-dev-ip"), -1);
   var parsed = protocol.parseHistoryResponse({
     day: "2026-11-26",
@@ -377,9 +388,24 @@ test("history replay ignores forged identity and still renders markdown", functi
   var demo = fs.readFileSync(path.join(root, "assets/js/ask-demo.js"), "utf8");
   assert.match(demo, /if \(active\) return;/);
   assert.match(demo, /currentMode\(\) === "api" && !hasPendingHandoff\(\)/);
-  assert.match(demo, /historyEndpoint\(/);
+  assert.match(demo, /historyRequestUrl\(/);
+  assert.match(demo, /forgetCachedHistory\(/);
   assert.match(demo, /parseHistoryResponse\(/);
   assert.equal(demo.indexOf("cf-connecting-ip"), -1);
+});
+
+test("service worker still caches the site and does not store ask history", function () {
+  var worker = fs.readFileSync(path.join(root, "assets/js/dist/sw.min.js"), "utf8");
+  assert.match(worker, /permalink: \/sw\.min\.js/);
+  assert.match(worker, /caches\.open\(swconf\.cacheName\)/);
+  assert.match(worker, /caches\.match\(event\.request\)/);
+  assert.match(worker, /cache\.put\(event\.request, copy\)/);
+  assert.match(worker, /isAskHistory\(url\)/);
+  assert.match(worker, /path === "\/ask\/history"/);
+  assert.match(worker, /no-store/);
+  assert.equal(worker.indexOf("event.respondWith(fetch(event.request))"), -1);
+  var config = fs.readFileSync(path.join(root, "_config.yml"), "utf8");
+  assert.match(config, /deny_paths:\n(?:[ \t]*#[^\n]*\n)*[ \t]+- "\/ask\/history"/);
 });
 
 test("frontend source does not call a model or send credentials", function () {

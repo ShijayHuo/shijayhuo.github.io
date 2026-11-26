@@ -476,10 +476,41 @@
     return url.origin + path + "/history";
   }
 
+  function historyPathname(value) {
+    try {
+      return new URL(value).pathname.replace(/\/+$/, "") || "/";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function isAskHistoryUrl(value) {
+    return historyPathname(value) === "/ask/history";
+  }
+
+  function isSameHistoryPath(left, right) {
+    var path = historyPathname(left);
+    if (path !== "/ask/history" || path !== historyPathname(right)) return false;
+    try {
+      return new URL(left).origin === new URL(right).origin;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function historyRequestUrl(endpoint) {
+    var value = historyEndpoint(endpoint);
+    if (!value) return "";
+    var url = new URL(value);
+    url.searchParams.set("ask_cache", String(Date.now()));
+    return url.href;
+  }
+
   function createHistoryFetchInit() {
     return {
       method: "GET",
       credentials: "omit",
+      cache: "no-store",
       headers: { Accept: "application/json" }
     };
   }
@@ -554,6 +585,9 @@
     greetingForHour: greetingForHour,
     resolveEndpoint: resolveEndpoint,
     historyEndpoint: historyEndpoint,
+    isAskHistoryUrl: isAskHistoryUrl,
+    isSameHistoryPath: isSameHistoryPath,
+    historyRequestUrl: historyRequestUrl,
     createHistoryFetchInit: createHistoryFetchInit,
     parseHistoryResponse: parseHistoryResponse,
     hasMockQuery: hasMockQuery,

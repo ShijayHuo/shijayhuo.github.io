@@ -31,7 +31,8 @@ backend/.wrangler
 
 # Misc
 _sass/vendors
-assets/js/dist
+assets/js/dist/*
+!assets/js/dist/sw.min.js
 
 # Hidden system files
 *~
