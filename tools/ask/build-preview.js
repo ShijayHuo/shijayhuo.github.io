@@ -231,6 +231,7 @@ var html = `<!DOCTYPE html>
     </main>
   </div>
   <script>${inlineScript(read("assets/js/ask-sse.js"))}</script>
+  <script>${inlineScript(read("assets/js/ask-markdown.js"))}</script>
   <script>${inlineScript(read("assets/js/ask-fixtures.js"))}</script>
   <script>${inlineScript(read("assets/js/ask-demo.js"))}</script>
   <script>

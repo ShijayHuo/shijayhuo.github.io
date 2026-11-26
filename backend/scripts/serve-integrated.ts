@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage } from "node:http";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { createReadStream, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -257,10 +257,22 @@ function startControl(resetQuota: () => Promise<number>, resetUpstream: () => Pr
   server.listen(controlPort, "127.0.0.1");
 }
 
-async function applyQuotaMigration(database: { exec: (sql: string) => Promise<unknown> }): Promise<void> {
-  const sql = await readFile(path.join(backendRoot, "migrations", "0001_quota.sql"), "utf8");
-  const statement = sql.replace(/--.*$/gm, "").replace(/\s+/g, " ").trim();
-  await database.exec(statement);
+async function applyQuotaMigration(database: {
+  exec(sql: string): Promise<unknown>;
+  prepare(sql: string): { all<T>(): Promise<{ results?: T[] }> };
+}): Promise<void> {
+  const dir = path.join(backendRoot, "migrations");
+  const files = (await readdir(dir)).filter((name) => name.endsWith(".sql")).sort();
+  for (const name of files) {
+    const sql = await readFile(path.join(dir, name), "utf8");
+    const statement = sql.replace(/--.*$/gm, "").trim();
+    if (!statement) continue;
+    if (/ALTER TABLE\s+quota\s+ADD COLUMN\s+day/i.test(statement)) {
+      const info = await database.prepare("PRAGMA table_info(quota)").all<{ name: string }>();
+      if ((info.results ?? []).some((column) => column.name === "day")) continue;
+    }
+    await database.exec(statement);
+  }
 }
 
 async function main(): Promise<void> {
@@ -321,7 +333,8 @@ export default {
   await startSite(siteDir);
   startControl(async () => {
     const result = await database.prepare("DELETE FROM quota").run();
-    return Number(result.meta?.changes ?? 0);
+    const history = await database.prepare("DELETE FROM ask_exchange").run();
+    return Number(result.meta?.changes ?? 0) + Number(history.meta?.changes ?? 0);
   }, async () => {
     const response = await fetch(`http://127.0.0.1:${upstreamPort}/stats/reset`, { method: "POST" });
     return response.json();

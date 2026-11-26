@@ -89,6 +89,7 @@ export interface QuotaStatement {
   bind(...values: unknown[]): {
     run(): Promise<{ meta?: { changes?: number } }>;
     first<T>(): Promise<T | null>;
+    all<T>(): Promise<T[] | { results?: T[] }>;
   };
 }
 

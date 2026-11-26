@@ -39,3 +39,6 @@ jobs:
       - name: Bundle worker
         working-directory: backend
         run: npm run build:worker
+
+      - name: Frontend tests
+        run: node --test tools/ask/contract.test.js tools/ask/markdown.test.js

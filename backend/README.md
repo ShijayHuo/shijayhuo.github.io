@@ -59,13 +59,19 @@ node --experimental-strip-types scripts/build-knowledge.ts --validation \
 
 `0.25` 仍是代码里的起步门限，不是已校准阈值。四句探针里无关余弦约 0.308，相关约 0.427 和 0.391。全库冒烟是 102 篇、669 片：6 个正例 Top1 分数 0.5836 到 0.7509；无税号负例 `/about/` 0.4486，未公开履历负例 `/about/` 0.4507。0.25 会把这两个负例送进生成。不能用这 8 题选一个中间值然后宣称通过。评测规则在 `backend/eval/calibration.md`。`scripts/eval-recall.ts` 拒绝 `--min-score`，报告里的 `recallAccepted` 固定为 false。
 
-过了门限的块会交给同一次生成，但 `sources` 只保留模型最后一行 `{"cite":["id"]}` 里、并且属于这次证据的 id。模型判断证据不够时这一行是空数组，来源就是 `[]`。正文里的网址不会变成来源。这不是新的模型服务，也没有改 0.25。
+过了门限的块会交给同一次生成，但 `sources` 只保留模型写出的 `{"cite":["id"]}` 里、并且属于这次证据的 id。这一段可以单独成行，也可以贴在最后一句后面，或者包在只含它的代码块里；服务端会从正文里拿掉。模型判断证据不够时是空数组，来源就是 `[]`。正文里的网址不会变成来源。这不是新的模型服务，也没有改 0.25。
 
 box 的映射、端口、pid 和额度文件见 `backend/BOX.md`。
 
 ## D1
 
-迁移文件是 `migrations/0001_quota.sql`。表里只有 HMAC 摘要、次数和更新时间。
+迁移按文件名顺序：
+
+- `migrations/0001_quota.sql`：额度表。只有 HMAC 摘要、次数和更新时间。
+- `migrations/0002_daily.sql`：给已有行加 `day`。默认空字符串。不清零 `used`，不删除行。
+- `migrations/0003_exchange.sql`：当天问答表 `ask_exchange`。`key` 仍是 IP 的 HMAC，不存明文 IP。
+
+已有库先应用迁移，再部署会写 `day` 的 Worker。顺序反了，提问会在写入失败时返回 503，不会去改旧次数。
 
 手工第一次：
 
@@ -79,11 +85,13 @@ npx wrangler d1 create ajie-ask-quota
 npx wrangler d1 migrations apply ajie-ask-quota --remote
 ```
 
-本仓库没有执行这两步。以后的迁移不能 `DROP`、`DELETE` 或把 `used` 清零。Worker 回滚不碰这张表。
+本仓库没有执行这两步，也没有写入真实 database id 或 HMAC。对 `quota` 的后续迁移不能 `DROP`、`DELETE` 或把 `used` 清零。Worker 回滚不碰这张表。`ask_exchange` 里早于当天的行会在读取或新写入时删掉，避免一直变大。
 
-每个可信 IP 累计 20 次。占用发生在 query embedding 之前，用 `used < 20` 的条件更新。第 21 次返回 429，不调用模型。刷新和新会话不重置。
+每个可信 IP 在北京时间（`Asia/Shanghai`）的一个自然日内最多 20 次。占用发生在 query embedding 之前。同一天用 `used < 20` 的条件更新；日期对不上时把 `used` 改成 1，从这一天重新计数。第 21 次返回 429，不调用模型。`GET /ask/history` 只按请求里的 `CF-Connecting-IP` 回显当天问答和剩余次数，不占用额度。查询参数和正文里的 IP 不算数。
 
-占用之后，embedding 失败、证据不足、生成中断、用户取消或超时都不退还次数。数据库若在写入成功后抛错，同样不调用模型，也不把次数改回去。
+`day` 仍为空的旧行表示迁移前的终身计数。新代码在当天第一次提问时把它改成 1，不在迁移 SQL 里清零。同一公网 IP 下的人会看到同一段记录，并共用当天额度。
+
+占用之后，embedding 失败、证据不足、生成中断、用户取消或超时都不退还次数。数据库若在写入成功后抛错，同样不调用模型，也不把次数改回去。问答记录写失败也不退还，已经发出的响应保持原样。
 
 ## Worker 密钥和本地联调
 

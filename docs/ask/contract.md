@@ -49,7 +49,7 @@ document.documentElement.dataset.askApi = {{ site.ask.api_url | default: "" | js
 
 - 演示：`dataset.askDemo === "true"`。只走现有预写回答，不发请求。
 - 未配置：演示不为真，且 `dataset.askApi` 去掉空白后为空。不发请求。助手正文固定为 `问答服务尚未配置。`，没有来源。
-- 接口：演示不为真，且 `askApi` 是 `http:` 或 `https:` 绝对地址。只发下面的 `POST`。
+- 接口：演示不为真，且 `askApi` 是 `http:` 或 `https:` 绝对地址。提问发下面的 `POST`。进入 `/ask/` 或刷新时另发 `GET /ask/history`，不在演示和 mock 模式发。
 
 `ask.demo: true` 时忽略 `api_url`。生产站点（`JEKYLL_ENV=production`）演示关闭，并把上面的地址写进页面。其他构建仍写出空的 `askApi`，本地验收不会打到生产。缺配置时显示未配置，不用演示文案顶上。
 
@@ -61,7 +61,7 @@ document.documentElement.dataset.askApi = {{ site.ask.api_url | default: "" | js
 - 否则在路径后追加 `/ask`（先去掉末尾斜杠）。
 - 其他协议丢弃，按未配置处理。
 
-客户端请求不带 Cookie、`Authorization`、密钥，也不发送 `x-ask-dev-ip`。`credentials` 为 `omit`。
+客户端请求不带 Cookie、`Authorization`、密钥，也不发送 `x-ask-dev-ip`，查询参数里也不带 IP。`credentials` 为 `omit`。
 
 ## 已确认的界面挂钩
 
@@ -72,15 +72,15 @@ document.documentElement.dataset.askApi = {{ site.ask.api_url | default: "" | js
 - `remaining > 0`：`还可问 N 次`
 - `remaining === 0`：`已达到 20 次上限`
 
-用户正文和模型正文只用 `textContent`。不把模型输出当 HTML，也不自动把正文里的网址变成链接。
+用户正文只用 `textContent`。助手正文渲染有限的 Markdown（段落、加粗、斜体、有序和无序列表、行内代码），先转义再插入，不执行模型写下的 HTML，也不把模型写下的网址变成链接。来源链接只来自 `sources`。
 
 来源只渲染 `sources` 事件里通过校验的项。链接文字是 `title`。`href` 只用通过校验的站内路径。
 
-首页发送仍进入 `/ask/`，问题不进网址。菜单点入仍是空问候。聊天页仍没有文章流和右侧更新标签。
+首页发送仍进入 `/ask/`，问题不进网址。接口模式下进入 `/ask/` 或刷新时，回显该 IP 当天的问答；没有记录时仍是空问候。演示和 mock 不拉取这段记录。聊天页仍没有文章流和右侧更新标签。
 
 ## 请求
 
-`POST /ask`。`/ask/` 与 `/ask` 相同。`Content-Type: application/json`。`Accept: text/event-stream`。正文 UTF-8，最大 32768 字节。
+`POST /ask`。`/ask/` 与 `/ask` 相同。`Content-Type: application/json`。`Accept: text/event-stream`。正文 UTF-8，最大 32768 字节。`GET /ask` 仍是 405。
 
 ```json
 {
@@ -110,6 +110,14 @@ document.documentElement.dataset.askApi = {{ site.ask.api_url | default: "" | js
 - `sourceIds` 可省略。若出现，必须是最多 8 个字符串；每个 1 到 64 字符，匹配 `^[A-Za-z0-9][A-Za-z0-9._-]*$`。
 - 当前问题不要放进 `history`。未完成的助手消息不要发送。
 - 客户端只回传自己接受过的来源 id。
+
+## 当天记录
+
+`GET /ask/history`。不读正文，也不看查询参数。身份只来自 `CF-Connecting-IP`。开发开关打开且没有这个头时才看 `x-ask-dev-ip`。查询参数、正文里的 `ip`、`key`、用户 id 都不能换成别人的记录。
+
+成功时 JSON：`day` 是北京时间（`Asia/Shanghai`）自然日，`YYYY-MM-DD`。`remaining` 是当天还剩几次，整数 `0` 到 `20`，还没提问时是 `20`。`messages` 只含这一天的问答，从早到晚，每条有 `role` 和 `content`。助手可以带 `sources`，校验和 SSE 相同。助手正文已经去掉 `{"cite":[...]}`。
+
+读取不占用额度，也不调用模型。过了当天不再返回前一天，并删除更早的问答行。同一个公网 IP 下的人会看到同一段记录，并共用当天 20 次。
 
 服务端用这些材料组织检索，而不是只拿最后一条孤立提问：
 
@@ -190,7 +198,7 @@ data: {}
 - 其他非流式错误：助手正文用返回的 `message`。没有合法 JSON 时用 `网络异常，这次没有收到完整回答。`
 - 这些正文都不是来源列表，也不链接到模型写下的网址。
 
-CORS 不是认证。`OPTIONS` 不占用额度，成功时 204 且没有正文。允许的源返回具体 `Access-Control-Allow-Origin`，另加 `Vary: Origin`。允许方法 `POST, OPTIONS`，允许头 `Content-Type`。不回 `*`，不带凭据。
+CORS 不是认证。`OPTIONS` 不占用额度，成功时 204 且没有正文。允许的源返回具体 `Access-Control-Allow-Origin`，另加 `Vary: Origin`。允许方法 `GET, POST, OPTIONS`，允许头 `Content-Type`。不回 `*`，不带凭据。
 
 源名单：环境变量未设置时只允许 `https://shijayhuo.github.io`。变量为空字符串、`*` 或含通配符时不允许任何源。本地联调把页面源写进变量，例如 `http://127.0.0.1:8765`。
 
@@ -216,7 +224,7 @@ data: {"message":"生成中断，这次次数已计入上限。"}
 
 `sse-cancelled.txt` 是中止前已经到达的事件：有 `meta` 和一个 `token`，没有 `done`，也没有 `error`。
 
-刷新、新会话、前进后退都不重置额度。第 21 次在调用 embedding 之前就返回 429。同 IP 并发用条件更新保证最多 20 次占用。无效请求和已经满额的请求不增加计数。配置不完整返回 503，发生在占用之前。
+额度按北京时间自然日计算。同一个 IP 当天最多 20 次，第二天从 20 次重新开始。第 21 次在调用 embedding 之前就返回 429。同 IP 并发用条件更新保证这一天最多 20 次占用。无效请求、读取历史和已经满额的请求不增加计数。配置不完整返回 503，发生在占用之前。失败默认不退还。
 
 ## Mock 样例怎么用
 

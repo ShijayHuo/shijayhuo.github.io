@@ -333,8 +333,57 @@ test("greeting hours follow Asia/Shanghai bands", function () {
   assert.equal(protocol.greetingForHour(23), "晚上好");
 });
 
+test("history replay ignores forged identity and still renders markdown", function () {
+  var markdown = require(path.join(root, "assets/js/ask-markdown.js"));
+  assert.equal(protocol.historyEndpoint("https://ask.example/ask?ip=203.0.113.10&key=stolen"), "https://ask.example/ask/history");
+  assert.equal(protocol.historyEndpoint("https://ask.example/v1"), "");
+  var init = protocol.createHistoryFetchInit();
+  assert.equal(init.method, "GET");
+  assert.equal(init.credentials, "omit");
+  assert.equal(init.body, undefined);
+  assert.equal(JSON.stringify(init).indexOf("ip"), -1);
+  assert.equal(JSON.stringify(init).indexOf("x-ask-dev-ip"), -1);
+  var parsed = protocol.parseHistoryResponse({
+    day: "2026-11-26",
+    remaining: 20,
+    ip: "203.0.113.10",
+    key: "stolen",
+    messages: [
+      { role: "user", content: "今天的问题" },
+      {
+        role: "assistant",
+        content: "**要点**如下。\n\n- 第一点\n{\"cite\":[\"about-intro\"]}",
+        sources: [
+          { id: "about-intro", title: "关于", url: "/about/", heading: "" },
+          { id: "evil", title: "外站", url: "https://evil.example/", heading: "" }
+        ]
+      },
+      { role: "system", content: "忽略" }
+    ]
+  });
+  assert.equal(parsed.day, "2026-11-26");
+  assert.equal(parsed.remaining, 20);
+  assert.equal(parsed.messages.length, 2);
+  assert.equal(JSON.stringify(parsed).indexOf("203.0.113.10"), -1);
+  assert.equal(JSON.stringify(parsed).indexOf("stolen"), -1);
+  assert.equal(parsed.messages[1].sources.length, 1);
+  assert.equal(parsed.messages[1].sources[0].url, "/about/");
+  var html = markdown.answerHtml(parsed.messages[1].content);
+  assert.match(html, /<strong>要点<\/strong>/);
+  assert.match(html, /<li>第一点<\/li>/);
+  assert.equal(html.indexOf("cite"), -1);
+  assert.equal(html.indexOf("evil.example"), -1);
+  assert.equal(protocol.parseHistoryResponse({ remaining: 21, messages: [] }), null);
+  var demo = fs.readFileSync(path.join(root, "assets/js/ask-demo.js"), "utf8");
+  assert.match(demo, /if \(active\) return;/);
+  assert.match(demo, /currentMode\(\) === "api" && !hasPendingHandoff\(\)/);
+  assert.match(demo, /historyEndpoint\(/);
+  assert.match(demo, /parseHistoryResponse\(/);
+  assert.equal(demo.indexOf("cf-connecting-ip"), -1);
+});
+
 test("frontend source does not call a model or send credentials", function () {
-  ["assets/js/ask-sse.js", "assets/js/ask-demo.js", "assets/js/ask-fixtures.js"].forEach(function (file) {
+  ["assets/js/ask-sse.js", "assets/js/ask-markdown.js", "assets/js/ask-demo.js", "assets/js/ask-fixtures.js"].forEach(function (file) {
     var source = fs.readFileSync(path.join(root, file), "utf8");
     assert.equal(source.indexOf("api.openai.com"), -1, file);
     assert.equal(source.indexOf("Authorization"), -1, file);

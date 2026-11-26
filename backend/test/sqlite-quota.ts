@@ -18,6 +18,9 @@ function wrap(db: DatabaseSync): QuotaDatabase {
               const row = db.prepare(sql).get(...params) as T | undefined;
               return row ?? null;
             },
+            async all<T>() {
+              return db.prepare(sql).all(...params) as T[];
+            },
           };
         },
       };
@@ -25,20 +28,28 @@ function wrap(db: DatabaseSync): QuotaDatabase {
   };
 }
 
-function migrationSql(): string {
-  return readFileSync(path.join(import.meta.dirname, "../migrations/0001_quota.sql"), "utf8");
+function executableSql(name: string): string {
+  const sql = readFileSync(path.join(import.meta.dirname, "../migrations", name), "utf8");
+  return sql.split("\n").filter((line) => !line.trim().startsWith("--")).join("\n");
+}
+
+function applySchema(db: DatabaseSync): void {
+  db.exec(executableSql("0001_quota.sql"));
+  const columns = db.prepare("PRAGMA table_info(quota)").all() as Array<{ name: string }>;
+  if (!columns.some((column) => column.name === "day")) db.exec(executableSql("0002_daily.sql"));
+  db.exec(executableSql("0003_exchange.sql"));
 }
 
 export function createSqliteQuotaDatabase(): QuotaDatabase {
   const db = new DatabaseSync(":memory:");
-  db.exec(migrationSql());
+  applySchema(db);
   return wrap(db);
 }
 
 export function createFileQuotaDatabase(file: string): QuotaDatabase {
   mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
-  db.exec(migrationSql());
+  applySchema(db);
   return wrap(db);
 }
 

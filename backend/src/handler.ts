@@ -14,11 +14,12 @@ import {
 import { createMockChat, createMockEmbedding } from "./mock-adapter.ts";
 import { createOpenAIChat, createOpenAIEmbedding } from "./openai-adapter.ts";
 import { createPrompt } from "./prompt.ts";
+import { rememberExchange, readDayTranscript } from "./history.ts";
 import { createQuotaKey, isWeakProductionHmac, readTrustedIp, updateQuotaByKey } from "./quota.ts";
 import { createCitationSplitter, sourcesFromCitations } from "./cite.ts";
 import { createRetrievalQuery, encodeSse, isFollowUpQuestion, parseAskRequest } from "./protocol.ts";
 import { findChunksByQuery } from "./retrieve.ts";
-import type { AskBindings, ChatAdapter, EmbeddingAdapter, KnowledgeBundle, QuotaDatabase, ServiceConfig } from "./types.ts";
+import type { AskBindings, ChatAdapter, EmbeddingAdapter, KnowledgeBundle, QuotaDatabase, ServiceConfig, SourceLink } from "./types.ts";
 
 export interface AnswerDeps {
   now?: () => number;
@@ -72,7 +73,7 @@ function readMinScore(env: AskBindings): number | null {
 function applyCors(headers: Headers, origin: string): void {
   headers.set("access-control-allow-origin", origin);
   headers.set("vary", "Origin");
-  headers.set("access-control-allow-methods", "POST, OPTIONS");
+  headers.set("access-control-allow-methods", "GET, POST, OPTIONS");
   headers.set("access-control-allow-headers", "Content-Type");
 }
 
@@ -106,6 +107,41 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
+async function recordExchangeSafe(
+  database: QuotaDatabase,
+  key: string,
+  now: number,
+  question: string,
+  answer: string,
+  sources: Array<Pick<SourceLink, "id" | "title" | "url" | "heading">>,
+): Promise<void> {
+  try {
+    await rememberExchange(database, key, now, question, answer, sources);
+  } catch {
+    // 次数已经占用。记录失败不改响应，也不退还。
+  }
+}
+
+async function answerHistory(
+  request: Request,
+  env: AskBindings,
+  deps: AnswerDeps,
+  cors: Headers,
+  originAllowed: boolean,
+): Promise<Response> {
+  if (request.method !== "GET") return json(404, { error: "invalid", message: MSG.notFound }, cors);
+  if (!originAllowed) return json(403, { error: "forbidden", message: MSG.origin }, new Headers());
+  const database = deps.database ?? env.QUOTA_DB;
+  const secret = env.QUOTA_HMAC_KEY?.trim() ?? "";
+  const weakHmac = env.ASK_REQUIRE_STRONG_HMAC === "1" && isWeakProductionHmac(secret);
+  if (!database || !secret || weakHmac) return json(503, { error: "unavailable", message: MSG.unavailable }, cors);
+  const ip = readTrustedIp(request, env);
+  if (!ip) return json(403, { error: "forbidden", message: MSG.ip }, cors);
+  const quotaKey = await createQuotaKey(ip, secret);
+  const transcript = await readDayTranscript(database, quotaKey, deps.now?.() ?? Date.now());
+  return json(200, transcript, cors);
+}
+
 export async function createAnswer(request: Request, env: AskBindings, deps: AnswerDeps = {}): Promise<Response> {
   const url = new URL(request.url);
   const pathName = url.pathname === "/" ? url.pathname : url.pathname.replace(/\/$/, "");
@@ -123,6 +159,15 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
   if (request.method === "OPTIONS") {
     if (!originAllowed) return finish(json(403, { error: "forbidden", message: MSG.origin }, new Headers()), "forbidden");
     return finish(new Response(null, { status: 204, headers: cors }), null);
+  }
+  if (pathName === "/ask/history") {
+    try {
+      const response = await answerHistory(request, env, deps, cors, originAllowed);
+      const error = response.status === 200 ? null : response.status === 403 ? "forbidden" : response.status === 404 ? "invalid" : "unavailable";
+      return finish(response, error);
+    } catch {
+      return finish(json(503, { error: "unavailable", message: MSG.unavailable }, cors), "unavailable");
+    }
   }
   if (pathName !== "/ask") return finish(json(404, { error: "invalid", message: MSG.notFound }, cors), "invalid");
   if (request.method !== "POST") return finish(json(405, { error: "invalid", message: MSG.method }, cors), "invalid");
@@ -178,10 +223,12 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
   const ip = readTrustedIp(request, env);
   if (!ip) return finish(json(403, { error: "forbidden", message: MSG.ip }, cors), "forbidden");
 
+  const quotaDatabase = database;
+  const now = deps.now?.() ?? Date.now();
   const quotaKey = await createQuotaKey(ip, secret);
   let reserved: { reserved: boolean; used: number };
   try {
-    reserved = await updateQuotaByKey(database, quotaKey, deps.now?.() ?? Date.now());
+    reserved = await updateQuotaByKey(quotaDatabase, quotaKey, now);
   } catch {
     return finish(json(503, { error: "unavailable", message: MSG.unavailable }, cors), "unavailable");
   }
@@ -196,11 +243,9 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
   let vector: number[];
   try {
     vector = await embeddingAdapter.createEmbedding(retrievalText, signal);
-  } catch (error) {
+  } catch {
     if (request.signal.aborted) return finish(new Response(null, { status: 200, headers: cors }), null);
-    if (isAbortError(error)) {
-      return finish(json(502, { error: "upstream", message: MSG.upstream, remaining }, cors), "upstream");
-    }
+    await recordExchangeSafe(quotaDatabase, quotaKey, now, parsed.question, MSG.upstream, []);
     return finish(json(502, { error: "upstream", message: MSG.upstream, remaining }, cors), "upstream");
   }
 
@@ -208,6 +253,7 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
   try {
     hits = findChunksByQuery(readyBundle, vector, TOP_K);
   } catch {
+    await recordExchangeSafe(quotaDatabase, quotaKey, now, parsed.question, MSG.upstream, []);
     return finish(json(502, { error: "upstream", message: MSG.upstream, remaining }, cors), "upstream");
   }
   const strong = hits.filter((hit) => hit.score >= minScore);
@@ -233,15 +279,20 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
         if (closed) return;
         controller.enqueue(encoder.encode(encodeSse(event, data)));
       };
+      let produced = "";
+      let answerText = "";
+      let answerSources: SourceLink[] = [];
+      let persist = false;
       try {
         send("meta", { remaining, knowledgeVersion: readyBundle.manifest.knowledgeVersion });
         if (!messages) {
+          answerText = MSG.refusal;
+          persist = true;
           send("token", { text: MSG.refusal });
           send("sources", { sources: [] });
           send("done", {});
           return;
         }
-        let produced = "";
         const citations = createCitationSplitter();
         const emit = (part: string) => {
           const text = part.slice(0, MAX_OUTPUT_CHARS - produced.length);
@@ -259,14 +310,24 @@ export async function createAnswer(request: Request, env: AskBindings, deps: Ans
         if (request.signal.aborted) return;
         const cited = citations.finish();
         if (cited.text) emit(cited.text);
-        send("sources", { sources: sourcesFromCitations(evidence, cited.citedIds) });
+        answerText = produced;
+        answerSources = sourcesFromCitations(evidence, cited.citedIds);
+        persist = true;
+        send("sources", { sources: answerSources });
         send("done", {});
       } catch (error) {
         if (request.signal.aborted || closed) return;
         if (isAbortError(error) && request.signal.aborted) return;
+        answerText = produced || MSG.streamError;
+        persist = true;
         send("error", { message: MSG.streamError });
       } finally {
         closed = true;
+        if (!persist && produced) {
+          answerText = produced;
+          persist = true;
+        }
+        if (persist) await recordExchangeSafe(quotaDatabase, quotaKey, now, parsed.question, answerText, answerSources);
         try {
           controller.close();
         } catch {

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
-import { FIND_QUOTA_SQL, INSERT_QUOTA_SQL, createQuotaKey, isWeakProductionHmac, readTrustedIp, updateQuotaByKey } from "../src/quota.ts";
+import { FIND_QUOTA_SQL, INSERT_QUOTA_SQL, createQuotaKey, isWeakProductionHmac, readDailyRemaining, readTrustedIp, shanghaiDay, updateQuotaByKey } from "../src/quota.ts";
 import { createFileQuotaDatabase, createSqliteQuotaDatabase, readQuotaSummary, snapshotQuota } from "./sqlite-quota.ts";
 
 test("额度 SQL 在第二十一次不再增加", async () => {
@@ -84,6 +84,35 @@ test("快照读到 WAL 里尚未写回主文件的次数", () => {
   assert.equal(readQuotaSummary(snap.backup).usedSum, 14);
   assert.throws(() => readQuotaSummary(naive), /no such table/);
   writer.close();
+});
+
+test("额度按北京时间自然日重置，迁移不清零已有 used", async () => {
+  assert.equal(shanghaiDay(Date.parse("2026-11-25T15:59:59.000Z")), "2026-11-25");
+  assert.equal(shanghaiDay(Date.parse("2026-11-25T16:00:00.000Z")), "2026-11-26");
+  for (const name of ["0002_daily.sql", "0003_exchange.sql"]) {
+    const sql = readFileSync(path.join(import.meta.dirname, "../migrations", name), "utf8");
+    const executable = sql.split("\n").filter((line) => !line.trim().startsWith("--")).join("\n");
+    assert.equal(/\bDROP\b/i.test(executable), false, name);
+    assert.equal(/DELETE\s+FROM\s+quota/i.test(executable), false, name);
+    assert.equal(/\bused\s*=\s*0\b/i.test(executable), false, name);
+  }
+  const database = createSqliteQuotaDatabase();
+  await database.prepare("INSERT INTO quota (key, used, updated_at, day) VALUES (?1, 20, 1, '')").bind("legacy").run();
+  const legacy = await updateQuotaByKey(database, "legacy", Date.parse("2026-11-26T02:00:00.000Z"));
+  assert.equal(legacy.reserved, true);
+  assert.equal(legacy.used, 1);
+  assert.equal(await readDailyRemaining(database, "legacy", Date.parse("2026-11-26T02:00:00.000Z")), 19);
+  const day = Date.parse("2026-11-25T10:00:00.000Z");
+  const nextDay = Date.parse("2026-11-25T16:00:00.000Z");
+  for (let index = 0; index < 20; index += 1) {
+    assert.equal((await updateQuotaByKey(database, "daily", day)).reserved, true);
+  }
+  assert.equal((await updateQuotaByKey(database, "daily", day)).reserved, false);
+  assert.equal(await readDailyRemaining(database, "daily", day), 0);
+  const reset = await updateQuotaByKey(database, "daily", nextDay);
+  assert.equal(reset.reserved, true);
+  assert.equal(reset.used, 1);
+  assert.equal(await readDailyRemaining(database, "daily", nextDay), 19);
 });
 
 test("生产 HMAC 拒绝 local-only 和短密钥", () => {

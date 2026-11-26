@@ -1,11 +1,23 @@
 import { QUOTA_LIMIT } from "./limits.ts";
 import type { QuotaDatabase } from "./types.ts";
 
-export const INSERT_QUOTA_SQL = `INSERT INTO quota (key, used, updated_at) VALUES (?1, 1, ?2)
-ON CONFLICT(key) DO UPDATE SET used = used + 1, updated_at = ?2
-WHERE used < ${QUOTA_LIMIT}`;
+export const INSERT_QUOTA_SQL = `INSERT INTO quota (key, used, updated_at, day) VALUES (?1, 1, ?2, ?3)
+ON CONFLICT(key) DO UPDATE SET used = CASE WHEN day = ?3 THEN used + 1 ELSE 1 END, updated_at = ?2, day = ?3
+WHERE used < ${QUOTA_LIMIT} OR day != ?3`;
 
 export const FIND_QUOTA_SQL = `SELECT used, updated_at FROM quota WHERE key = ?1`;
+
+const FIND_DAY_SQL = `SELECT used, day FROM quota WHERE key = ?1`;
+
+const SHANGHAI_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+export function shanghaiDay(now: number): string {
+  const shifted = new Date(now + SHANGHAI_OFFSET_MS);
+  const year = shifted.getUTCFullYear();
+  const month = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const date = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${date}`;
+}
 
 const WEAK_HMAC_KEYS = new Set(["local-only", "test-hmac", "changeme"]);
 
@@ -43,8 +55,14 @@ export async function findOneQuotaByKey(database: QuotaDatabase, key: string): P
   return { used: Number(row.used), updatedAt: Number(row.updated_at) };
 }
 
+export async function readDailyRemaining(database: QuotaDatabase, key: string, now: number): Promise<number> {
+  const row = await database.prepare(FIND_DAY_SQL).bind(key).first<{ used: number; day: string | null }>();
+  if (!row || String(row.day ?? "") !== shanghaiDay(now)) return QUOTA_LIMIT;
+  return Math.max(0, QUOTA_LIMIT - Number(row.used));
+}
+
 export async function updateQuotaByKey(database: QuotaDatabase, key: string, now: number): Promise<{ reserved: boolean; used: number }> {
-  const result = await database.prepare(INSERT_QUOTA_SQL).bind(key, now).run();
+  const result = await database.prepare(INSERT_QUOTA_SQL).bind(key, now, shanghaiDay(now)).run();
   const changes = Number(result.meta?.changes ?? 0);
   const row = await findOneQuotaByKey(database, key);
   return { reserved: changes === 1, used: row?.used ?? 0 };
