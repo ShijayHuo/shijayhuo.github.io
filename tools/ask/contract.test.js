@@ -334,7 +334,7 @@ test("greeting hours follow Asia/Shanghai bands", function () {
 });
 
 test("frontend source does not call a model or send credentials", function () {
-  ["assets/js/ask-sse.js", "assets/js/ask-demo.js", "assets/js/ask-fixtures.js"].forEach(function (file) {
+  ["assets/js/ask-sse.js", "assets/js/ask-markdown.js", "assets/js/ask-demo.js", "assets/js/ask-fixtures.js"].forEach(function (file) {
     var source = fs.readFileSync(path.join(root, file), "utf8");
     assert.equal(source.indexOf("api.openai.com"), -1, file);
     assert.equal(source.indexOf("Authorization"), -1, file);

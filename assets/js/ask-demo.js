@@ -583,6 +583,22 @@ function selectedScenario() {
     syncSendButton(document.getElementById("ask-chat-input"));
   }
 
+  function fillBubbleText(el, message) {
+    if (!el) return;
+    var value = message.text || "";
+    if (message.role === "user") {
+      if (el.classList) el.classList.remove("ask-md");
+      el.textContent = value;
+      return;
+    }
+    var markdown = window.AskMarkdown;
+    if (!markdown || typeof markdown.fillAnswer !== "function") {
+      el.textContent = value;
+      return;
+    }
+    markdown.fillAnswer(el, value, { streaming: !!message.pending });
+  }
+
   function linkElement(source) {
     var pack = api();
     if (!source || !pack || !pack.URL_RE.test(source.url)) return null;
@@ -625,7 +641,7 @@ function selectedScenario() {
     bubble.className = "ask-bubble";
     var text = document.createElement("div");
     text.className = "ask-bubble-text";
-    text.textContent = message.text || "";
+    fillBubbleText(text, message);
     bubble.appendChild(text);
     if (message.role === "user") {
       article.appendChild(bubble);
@@ -698,7 +714,7 @@ function selectedScenario() {
     var stopped = node.querySelector(".ask-stopped");
     var error = node.querySelector(".ask-error");
     var sources = node.querySelector(".ask-sources");
-    if (text) text.textContent = message.text || "";
+    if (text) fillBubbleText(text, message);
     if (pending) pending.hidden = !(message.pending && !message.text);
     if (stopped) stopped.hidden = !message.stopped;
     if (error) {

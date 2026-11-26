@@ -586,6 +586,65 @@ html:has(#ask-app) {
   color: var(--heading-color);
 }
 
+.ask-msg-assistant .ask-md {
+  white-space: normal;
+}
+
+.ask-md p,
+.ask-md ul,
+.ask-md ol,
+.ask-md pre {
+  margin: 0 0 0.7rem;
+}
+
+.ask-md p:last-child,
+.ask-md ul:last-child,
+.ask-md ol:last-child,
+.ask-md pre:last-child {
+  margin-bottom: 0;
+}
+
+.ask-md ul,
+.ask-md ol {
+  padding-left: 1.2rem;
+}
+
+.ask-md li + li {
+  margin-top: 0.28rem;
+}
+
+.ask-md strong {
+  font-weight: 650;
+  color: var(--heading-color);
+}
+
+.ask-md em {
+  font-style: italic;
+}
+
+.ask-md code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.92em;
+  padding: 0.08em 0.32em;
+  border-radius: 0.28rem;
+  background: color-mix(in srgb, var(--heading-color) 8%, var(--main-bg));
+}
+
+.ask-md pre {
+  padding: 0.55rem 0.7rem;
+  overflow-x: auto;
+  border-radius: 0.45rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: color-mix(in srgb, var(--heading-color) 8%, var(--main-bg));
+}
+
+.ask-md pre code {
+  padding: 0;
+  background: transparent;
+  font-size: inherit;
+}
+
 .ask-pending,
 .ask-stopped,
 .ask-error {

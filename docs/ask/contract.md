@@ -72,7 +72,7 @@ document.documentElement.dataset.askApi = {{ site.ask.api_url | default: "" | js
 - `remaining > 0`：`还可问 N 次`
 - `remaining === 0`：`已达到 20 次上限`
 
-用户正文和模型正文只用 `textContent`。不把模型输出当 HTML，也不自动把正文里的网址变成链接。
+用户正文只用 `textContent`。助手正文渲染有限的 Markdown（段落、加粗、斜体、有序和无序列表、行内代码），先转义再插入，不执行模型写下的 HTML，也不把模型写下的网址变成链接。来源链接只来自 `sources`。
 
 来源只渲染 `sources` 事件里通过校验的项。链接文字是 `title`。`href` 只用通过校验的站内路径。
 
